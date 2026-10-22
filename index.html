@@ -487,6 +487,8 @@ const T = {
   left:'Left', status:'Status', date:'Date', module:'Module', hours:'Hours', ok:'OK',
   warn1:'Notice', warn2:'Warning', final:'Final warning', deprived:'Deprived',
   noRecords:'No absences recorded yet.', markAll:'All', searchStu:'Search a student…', perWeek:'week',
+  allSubjectsReport:'Report covering every subject…', reportStyle:'Report layout',
+  styleBySubject:'Grouped by subject', styleByStudent:'One line per student',
   permitted:'Permitted', permitLocked:'This student has an approved permit and cannot be marked absent.',
   refreshData:'Reload data from the sheet',
   refreshDataHint:'Use this after editing the sheet by hand if the app still shows the old list.',
@@ -545,6 +547,8 @@ const T = {
   left:'ماوە', status:'دۆخ', date:'بەروار', module:'وانە', hours:'کاتژمێر', ok:'باش',
   warn1:'ئاگاداری', warn2:'ئاگاداری ٢', final:'ئاگاداری کۆتایی', deprived:'محروم',
   noRecords:'هێشتا هیچ نائامادەبوونێک تۆمار نەکراوە.', markAll:'هەموو', searchStu:'گەڕان بۆ خوێندکار…', perWeek:'هەفتە',
+  allSubjectsReport:'ڕاپۆرتی هەموو وانەکان…', reportStyle:'شێوازی ڕاپۆرت',
+  styleBySubject:'بەپێی وانە', styleByStudent:'هەر خوێندکارێک لە دێڕێکدا',
   permitted:'مۆڵەتدار', permitLocked:'ئەم خوێندکارە مۆڵەتی پەسەندکراوی هەیە و ناتوانرێت نائامادە بکرێت.',
   refreshData:'نوێکردنەوەی زانیاری لە شیتەکە',
   refreshDataHint:'دوای دەستکاری شیتەکە بە دەست، ئەمە بەکاربهێنە ئەگەر ئەپ هێشتا لیستی کۆن پیشان دەدات.',
@@ -1172,12 +1176,26 @@ function renderRecords(){
   const planned = rows[0] ? rows[0].planned : 0;
   const held    = rows[0] ? rows[0].heldHours : 0;
   $('#recBody').innerHTML = `
-    <div class="row" style="margin-bottom:12px;gap:7px">
+    <div class="row" style="margin-bottom:8px;gap:7px">
       <button class="btn sm sec" data-export="xlsx" style="flex:1">
         <span class="lbl">⤓ ${esc(t('exportX'))}</span></button>
       <button class="btn sm sec" data-export="docx" style="flex:1">
         <span class="lbl">⤓ ${esc(t('exportW'))}</span></button>
     </div>
+    <details id="recAllBox" style="margin-bottom:12px"><summary class="muted" style="cursor:pointer;font-size:12.5px">
+        ${esc(t('allSubjectsReport'))}</summary>
+      <label class="f" style="margin:10px 0 8px"><span class="lb">${esc(t('reportStyle'))}</span>
+        <select id="recStyle">
+          <option value="subject">${esc(t('styleBySubject'))}</option>
+          <option value="student">${esc(t('styleByStudent'))}</option>
+        </select></label>
+      <div class="row" style="gap:7px">
+        <button class="btn sm ghost" data-exportall="xlsx" style="flex:1">
+          <span class="lbl">⤓ ${esc(t('exportX'))}</span></button>
+        <button class="btn sm ghost" data-exportall="docx" style="flex:1">
+          <span class="lbl">⤓ ${esc(t('exportW'))}</span></button>
+      </div>
+    </details>
     <div class="kv"><span>${esc(t('plannedH'))}</span><b>${planned} h</b></div>
     <div class="kv"><span>${esc(t('heldH'))}</span><b>${held} h</b></div>
     <div class="tscroll" style="margin-top:10px"><table><thead><tr>
@@ -1249,6 +1267,13 @@ $('#v-records').addEventListener('click', e => {
     return doExport(ex, Object.assign({
       format: ex.dataset.export, moduleId: S.recModule,
       moduleTitle: m ? (m.nameKu || m.name) : ''
+    }, filterArgs()));
+  }
+  const exAll = e.target.closest('[data-exportall]');
+  if (exAll){
+    const st = $('#recStyle');
+    return doExport(exAll, Object.assign({
+      format: exAll.dataset.exportall, style: st ? st.value : 'subject'
     }, filterArgs()));
   }
   const tb = e.target.closest('[data-rec]');
@@ -1381,6 +1406,11 @@ function renderAdmin(){
       <label class="f"><span class="lb">${esc(t('module'))}</span>
         <select id="admMod"><option value="">${esc(t('allModules'))}</option>
           ${d.modules.map(m=>`<option value="${esc(m.id)}">${esc(yearTxt(m.year))} · ${esc(m.name)}</option>`).join('')}</select></label>
+      <label class="f"><span class="lb">${esc(t('reportStyle'))}</span>
+        <select id="admStyle">
+          <option value="subject">${esc(t('styleBySubject'))}</option>
+          <option value="student">${esc(t('styleByStudent'))}</option>
+        </select></label>
       <div class="frow" style="display:flex;gap:9px;flex-wrap:wrap">
         <label class="f" style="flex:1;min-width:120px"><span class="lb">${esc(t('threshold'))}</span>
           <select id="admPct">
@@ -1549,10 +1579,12 @@ $('#admBody').addEventListener('click', e => {
   if (ex){
     const y = $('#admYear'), m = $('#admMod');
     const mod = m && m.value ? (S.adm.modules.find(x => x.id === m.value) || {}) : null;
+    const st = $('#admStyle');
     return doExport(ex, Object.assign({
       format: ex.dataset.aexport, scopeAll: true,
       year: y ? y.value : '', moduleId: m ? m.value : '',
-      moduleTitle: mod ? (mod.nameKu || mod.name) : ''
+      moduleTitle: mod ? (mod.nameKu || mod.name) : '',
+      style: st ? st.value : 'subject'
     }, admFilterArgs()));
   }
   const b = e.target.closest('[data-inv]'); if (!b) return;
