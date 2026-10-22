@@ -13,5 +13,5 @@
 
 window.UOR_CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbzdex_ZHHoCVnYsbV9EpHygZb9S13LcpHb5nXo0sKO6Yw-6LbgUrsGRemeTMfoQZeSp/exec',
-  APP_KEY: 'uor-bio-2026-CHANGE-THIS'
+  APP_KEY: 'uor-bio-2026-0000-nawzad'
 };
