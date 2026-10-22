@@ -483,6 +483,8 @@ const T = {
   left:'Left', status:'Status', date:'Date', module:'Module', hours:'Hours', ok:'OK',
   warn1:'Notice', warn2:'Warning', final:'Final warning', deprived:'Deprived',
   noRecords:'No absences recorded yet.', markAll:'All', searchStu:'Search a student…', perWeek:'week',
+  refreshData:'Reload data from the sheet',
+  refreshDataHint:'Use this after editing the sheet by hand if the app still shows the old list.',
   lateList:'Late', excusedList:'Excused', filters:'Filters', threshold:'Absence at least',
   noFilter:'No filter', over10:'Above 10%', dateFrom:'From', dateTo:'To',
   apply:'Apply', clear:'Clear', times:'times', noLate:'No late arrivals recorded.',
@@ -538,6 +540,8 @@ const T = {
   left:'ماوە', status:'دۆخ', date:'بەروار', module:'وانە', hours:'کاتژمێر', ok:'باش',
   warn1:'ئاگاداری', warn2:'ئاگاداری ٢', final:'ئاگاداری کۆتایی', deprived:'محروم',
   noRecords:'هێشتا هیچ نائامادەبوونێک تۆمار نەکراوە.', markAll:'هەموو', searchStu:'گەڕان بۆ خوێندکار…', perWeek:'هەفتە',
+  refreshData:'نوێکردنەوەی زانیاری لە شیتەکە',
+  refreshDataHint:'دوای دەستکاری شیتەکە بە دەست، ئەمە بەکاربهێنە ئەگەر ئەپ هێشتا لیستی کۆن پیشان دەدات.',
   lateList:'درەنگ', excusedList:'مۆڵەت', filters:'پاڵاوتن', threshold:'نائامادەبوون لانیکەم',
   noFilter:'بێ پاڵاوتن', over10:'زیاتر لە ١٠٪', dateFrom:'لە', dateTo:'بۆ',
   apply:'جێبەجێکردن', clear:'سڕینەوە', times:'جار', noLate:'هیچ درەنگێک تۆمار نەکراوە.',
@@ -702,8 +706,8 @@ function rerender(){
 $('#segT').onclick = () => { S.mode = 'teacher'; $('#segT').classList.add('on'); $('#segA').classList.remove('on'); };
 $('#segA').onclick = () => { S.mode = 'admin';   $('#segA').classList.add('on'); $('#segT').classList.remove('on'); };
 
-/* A real address, not merely something containing "@" — the admin code
-   Admin@Uor2026 contains one and must still be treated as a code. */
+/* A real address, not merely something containing "@" — an access code may
+   contain one and must still be treated as a code. */
 const isEmail = v => /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(String(v).trim());
 
 $('#inCode').addEventListener('input', e => {
@@ -1499,7 +1503,15 @@ function renderAdmin(){
     body.innerHTML = `<div class="card">${keys.map(k=>`
       <label class="f"><span class="lb">${esc(k)}</span>
         <input data-set="${esc(k)}" value="${esc(d.settings[k] !== undefined ? d.settings[k] : '')}"></label>`).join('')}
-      <button class="btn" id="setSave"><span class="lbl">${esc(t('save'))}</span></button></div>`;
+      <button class="btn" id="setSave"><span class="lbl">${esc(t('save'))}</span></button>
+      <button class="btn sec" id="cacheBtn" style="margin-top:9px">
+        <span class="lbl">${esc(t('refreshData'))}</span></button>
+      <p class="muted" style="margin-top:8px">${esc(t('refreshDataHint'))}</p></div>`;
+    $('#cacheBtn').onclick = e => run(e.currentTarget, async () => {
+      const r = await api('clearCache', { code:S.code });
+      toast(`${r.students} · ${r.modules} · ${r.schedule}`, 'good');
+      await loadAdmin();
+    }, t('loading'));
     $('#setSave').onclick = e => run(e.currentTarget, async () => {
       for (const el of $$('[data-set]')) await api('saveSetting', { code:S.code, key:el.dataset.set, value:el.value });
       toast(t('setSaved'), 'good');
