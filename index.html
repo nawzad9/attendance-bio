@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14306b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Attendance">
+<title>UoR Attendance — Biotechnology</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+
+<!-- Connection settings live in config.js — edit that file, not this one. -->
+<script src="config.js"></script>
+
+<style>
+:root{
+  --navy:#14306b; --navy-700:#1b3d85; --navy-50:#eef2fb;
+  --gold:#f5b715; --gold-dk:#c99106;
+  --ink:#0f172a; --ink-2:#475569; --ink-3:#8294b0;
+  --line:#e4eaf3; --bg:#f3f6fb; --card:#ffffff;
+  --ok:#0f9d6b; --ok-bg:#e7f7f0;
+  --warn:#d98216; --warn-bg:#fdf3e4;
+  --bad:#c0392b; --bad-bg:#fdeceb;
+  --info:#2563c7; --info-bg:#e9f1fd;
+  --r:16px; --r-sm:11px;
+  --shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px -12px rgba(15,23,42,.22);
+  --tap:46px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --navy:#4c7ae0; --navy-700:#5d88ea; --navy-50:#162441;
+    --ink:#e8eefb; --ink-2:#a9b8d4; --ink-3:#7a8aa8;
+    --line:#223050; --bg:#0c1322; --card:#121c30;
+    --ok-bg:#10301f; --warn-bg:#352413; --bad-bg:#3a1a17; --info-bg:#15264a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.8);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Arabic",Tahoma,sans-serif;
+  font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+body.rtl{direction:rtl}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer}
+.hide{display:none !important}
+
+/* ---------- app frame ---------- */
+#app{max-width:760px;margin:0 auto;padding:0 0 96px;min-height:100vh}
+.appbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--navy);color:#fff;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 12px;
+  display:flex;align-items:center;gap:10px;
+  box-shadow:0 2px 14px rgba(15,23,42,.18);
+}
+.appbar .brand{width:36px;height:36px;border-radius:10px;background:var(--gold);
+  color:#14306b;display:grid;place-items:center;font-weight:800;font-size:13px;flex:0 0 auto}
+.appbar .tt{flex:1;min-width:0}
+.appbar .tt b{display:block;font-size:15px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appbar .tt span{display:block;font-size:11.5px;color:#b9c8e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  color:#fff;background:rgba(255,255,255,.12);font-size:13px;font-weight:600;flex:0 0 auto}
+.iconbtn:active{transform:scale(.94)}
+.iconbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.wrap{padding:16px 14px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card.tight{padding:12px}
+.sec-t{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-3);margin:18px 2px 9px}
+
+/* ---------- buttons ---------- */
+.btn{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:var(--tap);padding:0 20px;border-radius:13px;
+  background:var(--navy);color:#fff;font-weight:600;font-size:15px;
+  transition:transform .08s,filter .15s;width:100%;
+}
+.btn:active{transform:scale(.985)}
+.btn.sec{background:var(--navy-50);color:var(--navy)}
+.btn.ghost{background:transparent;color:var(--navy);border:1.5px solid var(--line)}
+.btn.gold{background:var(--gold);color:#14306b}
+.btn.danger{background:var(--bad);color:#fff}
+.btn.sm{min-height:38px;font-size:13.5px;padding:0 14px;border-radius:10px;width:auto}
+.btn[disabled],.btn.busy{opacity:.62;pointer-events:none}
+.btn.busy .lbl{opacity:.35}
+.btn.busy::after{
+  content:"";position:absolute;width:17px;height:17px;border-radius:50%;
+  border:2.2px solid currentColor;border-top-color:transparent;animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row{display:flex;gap:9px;flex-wrap:wrap}
+.row>.btn{width:auto;flex:1}
+
+/* ---------- inputs ---------- */
+label.f{display:block;margin-bottom:12px}
+label.f .lb{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin:0 2px 6px}
+input,select,textarea{
+  width:100%;min-height:var(--tap);padding:11px 13px;border-radius:12px;
+  border:1.5px solid var(--line);background:var(--card);outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+textarea{min-height:120px;resize:vertical;line-height:1.55}
+input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3.5px var(--navy-50)}
+.code-in{text-align:center;font-size:23px;font-weight:700;letter-spacing:.22em;
+  font-family:ui-monospace,Menlo,Consolas,monospace;min-height:58px}
+
+/* ---------- login ---------- */
+.hero{padding:34px 14px 8px;text-align:center}
+.hero .logo{width:72px;height:72px;margin:0 auto 14px;border-radius:21px;background:var(--navy);
+  display:grid;place-items:center;box-shadow:0 10px 30px -10px rgba(20,48,107,.6)}
+.hero .logo b{color:var(--gold);font-size:21px;font-weight:800;letter-spacing:.02em}
+.hero h1{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.hero p{color:var(--ink-2);font-size:13.5px;margin-top:5px}
+.seg{display:flex;background:var(--navy-50);border-radius:13px;padding:4px;gap:4px;margin-bottom:14px}
+.seg button{flex:1;min-height:40px;border-radius:10px;font-size:14px;font-weight:600;color:var(--navy)}
+.seg button.on{background:var(--card);box-shadow:0 1px 4px rgba(15,23,42,.12)}
+.link{color:var(--navy);font-weight:600;font-size:13.5px;text-decoration:none;display:inline-block;padding:9px 4px}
+
+/* ---------- lists / module cards ---------- */
+.mod{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);
+  border-radius:14px;background:var(--card);margin-bottom:10px}
+.mod .dot{width:42px;height:42px;border-radius:12px;background:var(--navy-50);color:var(--navy);
+  display:grid;place-items:center;font-weight:800;font-size:12.5px;flex:0 0 auto}
+.mod .m{flex:1;min-width:0}
+.mod .m b{display:block;font-size:14.5px;font-weight:650;line-height:1.3}
+.mod .m span{display:block;font-size:12px;color:var(--ink-3);margin-top:2px}
+.mod .acts{display:flex;gap:7px;flex:0 0 auto}
+
+.slot{display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:13px;
+  background:var(--card);border:1px solid var(--line);margin-bottom:9px}
+.slot.now{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,183,21,.17)}
+.slot .time{font-size:11.5px;font-weight:700;color:var(--navy);background:var(--navy-50);
+  padding:7px 9px;border-radius:9px;text-align:center;line-height:1.25;flex:0 0 auto;min-width:56px}
+.slot .s{flex:1;min-width:0}
+.slot .s b{display:block;font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .s span{font-size:11.5px;color:var(--ink-3)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+  font-size:11px;font-weight:700;letter-spacing:.02em}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn1,.pill.warn2{background:var(--warn-bg);color:var(--warn)}
+.pill.final,.pill.deprived{background:var(--bad-bg);color:var(--bad)}
+.pill.info{background:var(--info-bg);color:var(--info)}
+.pill.gray{background:var(--navy-50);color:var(--ink-2)}
+
+/* ---------- roster ---------- */
+.rosterbar{position:sticky;top:60px;z-index:30;background:var(--bg);padding:10px 14px 8px;
+  border-bottom:1px solid var(--line)}
+.sum{display:flex;gap:8px;margin-bottom:9px}
+.sum div{flex:1;text-align:center;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:8px 4px}
+.sum b{display:block;font-size:18px;font-weight:750;line-height:1.1}
+.sum span{font-size:10.5px;color:var(--ink-3);letter-spacing:.03em}
+.sum .a b{color:var(--bad)} .sum .p b{color:var(--ok)} .sum .e b{color:var(--info)}
+
+.hhead{display:flex;align-items:center;gap:8px;padding:7px 14px 5px;font-size:10.5px;
+  color:var(--ink-3);font-weight:700;letter-spacing:.05em}
+.hhead .sp{flex:1}
+.hhead button{width:38px;height:26px;border-radius:8px;background:var(--navy-50);color:var(--navy);
+  font-size:10.5px;font-weight:700}
+
+.stu{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line);
+  background:var(--card)}
+.stu:first-of-type{border-top:1px solid var(--line)}
+.stu .n{flex:1;min-width:0}
+.stu .n b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu .n span{font-size:11px;color:var(--ink-3)}
+.stu .cells{display:flex;gap:5px;flex:0 0 auto}
+.hr{width:38px;height:38px;border-radius:10px;font-size:13px;font-weight:750;
+  display:grid;place-items:center;transition:transform .08s;
+  background:var(--ok-bg);color:var(--ok);border:1.5px solid transparent}
+.hr:active{transform:scale(.9)}
+.hr[data-m="A"]{background:var(--bad);color:#fff}
+.hr[data-m="E"]{background:var(--info);color:#fff}
+.hr[data-m="L"]{background:var(--gold);color:#5c4204}
+.stu.flagged{background:linear-gradient(90deg,var(--bad-bg),var(--card) 55%)}
+body.rtl .stu.flagged{background:linear-gradient(-90deg,var(--bad-bg),var(--card) 55%)}
+
+.footbar{position:fixed;left:0;right:0;bottom:0;z-index:45;
+  background:color-mix(in srgb,var(--card) 92%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);
+  padding:10px 14px calc(env(safe-area-inset-bottom) + 10px)}
+.footbar .inner{max-width:760px;margin:0 auto;display:flex;gap:9px;align-items:center}
+.saved{font-size:11px;color:var(--ink-3);text-align:center;padding-top:6px}
+
+/* ---------- tables ---------- */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:start;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:700;padding:8px 8px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num{text-align:end;font-variant-numeric:tabular-nums;font-weight:650;white-space:nowrap}
+tbody tr:active{background:var(--navy-50)}
+.bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px;min-width:54px}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--ok)}
+.bar.warn1 i,.bar.warn2 i{background:var(--warn)}
+.bar.final i,.bar.deprived i{background:var(--bad)}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;padding:9px 14px;border-radius:11px;font-size:13.5px;
+  font-weight:600;background:var(--card);border:1px solid var(--line);color:var(--ink-2)}
+.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ---------- modal / sheet ---------- */
+.sheet{position:fixed;inset:0;z-index:70;display:none}
+.sheet.show{display:block}
+.sheet .scrim{position:absolute;inset:0;background:rgba(8,15,30,.5);backdrop-filter:blur(3px)}
+.sheet .panel{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;
+  background:var(--card);border-radius:22px 22px 0 0;padding:8px 16px calc(env(safe-area-inset-bottom) + 18px);
+  max-width:760px;margin:0 auto;animation:up .22s cubic-bezier(.2,.8,.3,1)}
+@keyframes up{from{transform:translateY(16px);opacity:.6}}
+.grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 14px}
+.sheet h3{font-size:17px;font-weight:700;margin-bottom:4px}
+.sheet .sub{font-size:12.5px;color:var(--ink-3);margin-bottom:16px}
+
+/* ---------- busy / toast ---------- */
+#bar{position:fixed;top:0;left:0;height:3px;width:0;background:var(--gold);z-index:100;
+  transition:width .2s ease,opacity .3s;box-shadow:0 0 10px var(--gold)}
+#busy{position:fixed;inset:0;z-index:95;display:none;place-items:center;
+  background:rgba(8,15,30,.34);backdrop-filter:blur(2px)}
+#busy.show{display:grid}
+#busy .b{background:var(--card);border-radius:18px;padding:22px 26px;text-align:center;
+  box-shadow:0 20px 50px -18px rgba(8,15,30,.6);min-width:168px}
+#busy .ring{width:34px;height:34px;margin:0 auto 12px;border-radius:50%;
+  border:3px solid var(--navy-50);border-top-color:var(--navy);animation:spin .65s linear infinite}
+#busy b{display:block;font-size:14px;font-weight:650}
+#busy span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:3px}
+#toast{position:fixed;left:50%;transform:translate(-50%,24px);bottom:92px;z-index:98;
+  background:var(--ink);color:#fff;padding:12px 18px;border-radius:13px;font-size:13.5px;
+  font-weight:550;opacity:0;pointer-events:none;transition:.25s;max-width:92vw;text-align:center;
+  box-shadow:0 14px 34px -12px rgba(0,0,0,.5)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.err{background:var(--bad)} #toast.good{background:var(--ok)}
+#net{position:fixed;top:0;left:0;right:0;z-index:99;background:var(--warn);color:#fff;
+  font-size:12px;font-weight:600;text-align:center;padding:5px;display:none}
+#net.show{display:block}
+
+.empty{text-align:center;padding:34px 16px;color:var(--ink-3)}
+.empty b{display:block;font-size:15px;color:var(--ink-2);margin-bottom:4px}
+.muted{color:var(--ink-3);font-size:12.5px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.kv:last-child{border-bottom:0}
+.kv b{font-weight:650;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<div id="net"><span data-t="offline">Offline — your work is saved on this device</span></div>
+<div id="bar"></div>
+
+<div id="app">
+  <!-- ============ APP BAR ============ -->
+  <header class="appbar" id="appbar">
+    <button class="iconbtn hide" id="backBtn" aria-label="Back">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="brand">UoR</div>
+    <div class="tt"><b id="barTitle">UoR Attendance</b><span id="barSub">Biotechnology Department</span></div>
+    <button class="iconbtn" id="langBtn">KU</button>
+    <button class="iconbtn hide" id="outBtn" aria-label="Log out">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </header>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="v-login">
+    <div class="hero">
+      <div class="logo"><b>UoR</b></div>
+      <h1 data-t="appName">Attendance Portal</h1>
+      <p data-t="appSub">Biotechnology Department · University of Raparin</p>
+    </div>
+    <div class="wrap">
+      <div class="card" id="stepCode">
+        <div class="seg">
+          <button id="segT" class="on" data-t="teacher">Teacher</button>
+          <button id="segA" data-t="admin">Administrator</button>
+        </div>
+        <label class="f">
+          <span class="lb" data-t="codeOrEmail">Access code or university email</span>
+          <input id="inCode" class="code-in" autocomplete="username"
+                 autocapitalize="characters" spellcheck="false" placeholder="UOR••••••">
+        </label>
+        <button class="btn" id="loginBtn"><span class="lbl" data-t="signIn">Sign in</span></button>
+        <p class="muted" style="text-align:center;margin-top:10px" data-t="emailHint">
+          With an email address we send a one-time code to that inbox.</p>
+        <div style="text-align:center">
+          <a href="#" class="link" id="forgotLink" data-t="forgot">I forgot my code</a>
+        </div>
+      </div>
+
+      <div class="card hide" id="stepPin">
+        <h2 style="font-size:17px;font-weight:700;margin-bottom:4px" data-t="pinTitle">Check your email</h2>
+        <p class="sub muted" style="margin-bottom:16px"><span data-t="pinSub">We sent a 6-digit code to</span>
+          <b id="pinTo" style="display:block;margin-top:3px;color:var(--ink)"></b></p>
+        <label class="f">
+          <span class="lb" data-t="enterPin">Sign-in code</span>
+          <input id="inPin" class="code-in" type="text" inputmode="numeric"
+                 autocomplete="one-time-code" maxlength="6" placeholder="••••••">
+        </label>
+        <button class="btn" id="pinBtn"><span class="lbl" data-t="verify">Continue</span></button>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ghost sm" id="pinBack" style="flex:1"><span class="lbl" data-t="back">Back</span></button>
+          <button class="btn ghost sm" id="pinResend" style="flex:1"><span class="lbl" data-t="resend">Send again</span></button>
+        </div>
+      </div>
+      <p class="muted" style="text-align:center;padding:0 10px 20px" data-t="installTip">
+        Tip: use “Add to Home Screen” to install this as an app — it then works without internet.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ TEACHER HOME ============ -->
+  <section id="v-home" class="hide">
+    <div class="wrap">
+      <div class="card tight" id="todayCard">
+        <div class="sec-t" style="margin:4px 2px 9px" data-t="todayClasses">Today’s classes</div>
+        <div id="todaySlots"></div>
+      </div>
+      <div class="sec-t" data-t="myModules">My modules</div>
+      <div id="moduleList"></div>
+      <div id="adminEntry" class="hide" style="margin-top:6px">
+        <button class="btn sec" id="toAdminBtn"><span class="lbl" data-t="adminPanel">Administrator panel</span></button>
+      </div>
+      <div id="pendingBox" class="hide card" style="border-color:var(--warn)">
+        <b style="font-size:14px" data-t="pendingTitle">Waiting to be sent</b>
+        <p class="muted" id="pendingTxt" style="margin-top:4px"></p>
+        <button class="btn sm sec" id="syncBtn" style="margin-top:10px;width:100%">
+          <span class="lbl" data-t="syncNow">Send now</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ROSTER ============ -->
+  <section id="v-roster" class="hide">
+    <div class="rosterbar">
+      <div class="sum">
+        <div class="p"><b id="cPresent">0</b><span data-t="present">PRESENT</span></div>
+        <div class="a"><b id="cAbsent">0</b><span data-t="absent">ABSENT</span></div>
+        <div class="e"><b id="cExcused">0</b><span data-t="excused">EXCUSED</span></div>
+      </div>
+      <div class="row" style="margin-bottom:8px;gap:7px">
+        <button class="btn sm sec" id="allPresentBtn" style="flex:0 0 auto;white-space:nowrap">
+          <span class="lbl" data-t="allPresent">All present</span></button>
+        <input id="search" type="search" placeholder="Search a student…"
+               style="min-height:38px;flex:1;width:auto;border-radius:10px">
+      </div>
+    </div>
+    <div class="hhead" id="hourHead"></div>
+    <div id="rosterBody"></div>
+    <div class="wrap">
+      <p class="muted" style="text-align:center;padding:10px 0 2px" data-t="tapTip">
+        Tap an hour to change it: Present → Absent → Excused → Late</p>
+      <p class="muted" style="text-align:center;padding:0 0 4px" data-t="blankTip">
+        Anyone you do not change stays present.</p>
+    </div>
+    <div class="footbar">
+      <div class="inner">
+        <button class="btn ghost" id="draftBtn" style="flex:0 0 auto;width:auto;padding:0 16px">
+          <span class="lbl" data-t="save">Save</span></button>
+        <button class="btn gold" id="finalBtn"><span class="lbl" data-t="finalize">Finalize &amp; send</span></button>
+      </div>
+      <div class="saved" id="savedNote"></div>
+    </div>
+  </section>
+
+  <!-- ============ TEACHER RECORDS ============ -->
+  <section id="v-records" class="hide">
+    <div class="wrap">
+      <div class="tabs" id="recTabs"></div>
+      <div class="card tight">
+        <div class="tabs" style="padding:0 0 10px">
+          <button class="on" data-rec="students" data-t="students">Students</button>
+          <button data-rec="sessions" data-t="sessions">Sessions</button>
+        </div>
+        <div id="recBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section id="v-admin" class="hide">
+    <div class="wrap">
+      <div class="tabs" id="admTabs">
+        <button class="on" data-adm="report" data-t="tabReport">Report</button>
+        <button data-adm="audit" data-t="tabAudit">Daily check</button>
+        <button data-adm="permit" data-t="tabPermit">Permits</button>
+        <button data-adm="teachers" data-t="tabTeachers">Teachers</button>
+        <button data-adm="students" data-t="tabStudents">Students</button>
+        <button data-adm="settings" data-t="tabSettings">Settings</button>
+      </div>
+      <div id="admBody"></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ OVERLAYS ============ -->
+<div id="busy"><div class="b"><div class="ring"></div>
+  <b id="busyT" data-t="pleaseWait">Please wait…</b><span id="busyS"></span></div></div>
+<div id="toast"></div>
+
+<div class="sheet" id="sheet">
+  <div class="scrim" data-close></div>
+  <div class="panel"><div class="grab"></div><div id="sheetBody"></div></div>
+</div>
+
+<script>
+/* ======================================================================
+   UoR Attendance — front-end
+   Single file. No external libraries: everything below is the whole app.
+   ====================================================================== */
+
+/* ---------------------------------------------------------------- i18n */
+const T = {
+ en:{
+  appName:'Attendance Portal', appSub:'Biotechnology Department · University of Raparin',
+  teacher:'Teacher', admin:'Administrator', yourCode:'Your access code', signIn:'Sign in',
+  forgot:'I forgot my code', installTip:'Tip: use “Add to Home Screen” to install this as an app — it then works without internet.',
+  todayClasses:'Today’s classes', myModules:'My modules', adminPanel:'Administrator panel',
+  present:'PRESENT', absent:'ABSENT', excused:'EXCUSED', save:'Save', finalize:'Finalize & send',
+  tapTip:'Tap an hour to change it: Present → Absent → Excused → Late',
+  pleaseWait:'Please wait…', offline:'Offline — your work is saved on this device',
+  students:'Students', sessions:'Sessions', tabReport:'Report', tabAudit:'Daily check',
+  tabPermit:'Permits', tabTeachers:'Teachers', tabStudents:'Students', tabSettings:'Settings',
+  take:'Take', records:'Records', noClasses:'No classes scheduled today.',
+  allGroups:'All students (A + B)', groupA:'Group A', groupB:'Group B', chooseGroup:'Who is in this class?',
+  chooseGroupSub:'Pick the group for this session.', signingIn:'Signing in…', loading:'Loading…',
+  saving:'Saving…', sending:'Sending…', done:'Done', saved:'Saved', finalized:'Attendance sent successfully',
+  queued:'Saved on this device — it will be sent when you are back online',
+  emailsSent:'notification(s) emailed', name:'Name', group:'Group', absentH:'Absent', pct:'%',
+  left:'Left', status:'Status', date:'Date', module:'Module', hours:'Hours', ok:'OK',
+  warn1:'Notice', warn2:'Warning', final:'Final warning', deprived:'Deprived',
+  noRecords:'No absences recorded yet.', markAll:'All', searchStu:'Search a student…', perWeek:'week',
+  codeOrEmail:'Access code or university email',
+  emailHint:'With an email address we send a one-time code to that inbox.',
+  pinTitle:'Check your email', pinSub:'We sent a 6-digit code to',
+  enterPin:'Sign-in code', verify:'Continue', resend:'Send again', back:'Back',
+  checkingEmail:'Sending the code…', checkingPin:'Checking…',
+  allPresent:'All present', year:'Year', allYears:'All years', exportX:'Excel', exportW:'Word',
+  exporting:'Preparing the file…', downloaded:'File downloaded',
+  blankTip:'Anyone you do not change stays present.',
+  forgotTitle:'Recover your code', forgotSub:'Enter the email registered for you and we will send your code again.',
+  email:'Email address', send:'Send', recovered:'If that address is registered, the code has been sent to it.',
+  reopen:'Reopen', view:'View', locked:'Locked', draft:'Draft', finalLbl:'Sent',
+  pendingTitle:'Waiting to be sent', syncNow:'Send now', hoursOf:'h of',
+  sessionOf:'Session', confirmFinal:'Finalize this session?',
+  confirmFinalSub:'Absent students will be emailed and the percentages updated. You can still correct it today.',
+  cancel:'Cancel', yes:'Yes, finalize', plannedH:'Planned hours', heldH:'Held so far',
+  remainingH:'Hours left before deprivation', detailTitle:'Absence detail',
+  noDetail:'No absences in this module.', refresh:'Refresh', generated:'Updated',
+  expected:'Expected', missing:'Not submitted', submitted:'Submitted', allIn:'Everything submitted for this day.',
+  permitStudent:'Student', permitFrom:'From', permitTo:'To', permitReason:'Reason',
+  permitAdd:'Add permit', permitDone:'Permit recorded', allModules:'All modules',
+  importHint:'One student per line:  Name, email, A',
+  importBtn:'Import students', imported:'student(s) added', invite:'Email code',
+  inviteAll:'Email all teachers', inviteSent:'Email sent', quotaLeft:'emails left today',
+  setSaved:'Setting saved', total:'Total', unexcused:'Unexcused'
+ },
+ ku:{
+  appName:'پۆرتاڵی ئامادەبوون', appSub:'بەشی بایۆتەکنەلۆجی · زانکۆی ڕاپەڕین',
+  teacher:'مامۆستا', admin:'بەڕێوەبەر', yourCode:'کۆدی تایبەتی تۆ', signIn:'چوونەژوورەوە',
+  forgot:'کۆدەکەم لەبیرچووە', installTip:'ئامۆژگاری: «زیادکردن بۆ سەرەکی» بەکاربهێنە تا وەک ئەپ دابمەزرێت — ئینجا بەبێ ئینتەرنێتیش کاردەکات.',
+  todayClasses:'وانەکانی ئەمڕۆ', myModules:'وانەکانم', adminPanel:'پانێڵی بەڕێوەبەر',
+  present:'ئامادە', absent:'نائامادە', excused:'مۆڵەت', save:'پاشەکەوت', finalize:'کۆتایی و ناردن',
+  tapTip:'دەست لە کاتژمێرێک بدە بۆ گۆڕین: ئامادە → نائامادە → مۆڵەت → درەنگ',
+  pleaseWait:'تکایە چاوەڕێ بکە…', offline:'بێ ئینتەرنێت — کارەکەت لەم ئامێرە پاشەکەوت کراوە',
+  students:'خوێندکاران', sessions:'دانیشتنەکان', tabReport:'ڕاپۆرت', tabAudit:'پشکنینی ڕۆژانە',
+  tabPermit:'مۆڵەتەکان', tabTeachers:'مامۆستایان', tabStudents:'خوێندکاران', tabSettings:'ڕێکخستن',
+  take:'تۆمارکردن', records:'تۆمارەکان', noClasses:'ئەمڕۆ هیچ وانەیەک نییە.',
+  allGroups:'هەموو خوێندکاران (A + B)', groupA:'گروپی A', groupB:'گروپی B',
+  chooseGroup:'کێ لەم وانەیەدایە؟', chooseGroupSub:'گروپی ئەم دانیشتنە هەڵبژێرە.',
+  signingIn:'چوونەژوورەوە…', loading:'بارکردن…', saving:'پاشەکەوتکردن…', sending:'ناردن…',
+  done:'تەواو', saved:'پاشەکەوتکرا', finalized:'ئامادەبوون بە سەرکەوتوویی نێردرا',
+  queued:'لەم ئامێرە پاشەکەوت کرا — کاتێک ئینتەرنێت گەڕایەوە دەنێردرێت',
+  emailsSent:'ئاگادارکردنەوە نێردرا', name:'ناو', group:'گروپ', absentH:'نائامادە', pct:'%',
+  left:'ماوە', status:'دۆخ', date:'بەروار', module:'وانە', hours:'کاتژمێر', ok:'باش',
+  warn1:'ئاگاداری', warn2:'ئاگاداری ٢', final:'ئاگاداری کۆتایی', deprived:'محروم',
+  noRecords:'هێشتا هیچ نائامادەبوونێک تۆمار نەکراوە.', markAll:'هەموو', searchStu:'گەڕان بۆ خوێندکار…', perWeek:'هەفتە',
+  codeOrEmail:'کۆد یان ئیمەیڵی زانکۆ',
+  emailHint:'بە ئیمەیڵ، کۆدێکی یەکجارەیی بۆ ئەو ئیمەیڵە دەنێرین.',
+  pinTitle:'ئیمەیڵەکەت بپشکنە', pinSub:'کۆدێکی ٦ ژمارەیی نێردرا بۆ',
+  enterPin:'کۆدی چوونەژوورەوە', verify:'بەردەوامبە', resend:'دووبارە بنێرە', back:'گەڕانەوە',
+  checkingEmail:'ناردنی کۆد…', checkingPin:'پشکنین…',
+  allPresent:'هەموو ئامادەن', year:'قۆناغ', allYears:'هەموو قۆناغەکان', exportX:'ئێکسڵ', exportW:'وۆرد',
+  exporting:'ئامادەکردنی فایل…', downloaded:'فایل داگیرا',
+  blankTip:'هەر خوێندکارێک نەگۆڕیت، ئامادە دەمێنێتەوە.',
+  forgotTitle:'گەڕاندنەوەی کۆد', forgotSub:'ئیمەیڵی تۆمارکراوت بنووسە، کۆدەکەت دووبارە دەنێردرێت.',
+  email:'ئیمەیڵ', send:'ناردن', recovered:'ئەگەر ئەو ئیمەیڵە تۆمارکرابێت، کۆدەکە نێردرا.',
+  reopen:'کردنەوە', view:'بینین', locked:'داخراو', draft:'ڕەشنووس', finalLbl:'نێردراو',
+  pendingTitle:'چاوەڕێی ناردنە', syncNow:'ئێستا بنێرە', hoursOf:'کاتژمێر لە',
+  sessionOf:'دانیشتن', confirmFinal:'کۆتایی بەم دانیشتنە بهێنم؟',
+  confirmFinalSub:'ئیمەیڵ بۆ خوێندکارە نائامادەکان دەنێردرێت و ڕێژەکان نوێ دەکرێنەوە. ئەمڕۆ هێشتا دەتوانیت ڕاستی بکەیتەوە.',
+  cancel:'پاشگەزبوونەوە', yes:'بەڵێ، کۆتایی بهێنە', plannedH:'کاتژمێری پلاندراو', heldH:'ئەنجامدراو',
+  remainingH:'کاتژمێری ماوە پێش محرومی', detailTitle:'وردەکاری نائامادەبوون',
+  noDetail:'هیچ نائامادەبوونێک لەم وانەیەدا نییە.', refresh:'نوێکردنەوە', generated:'نوێکرایەوە',
+  expected:'پێویست', missing:'نەنێردراو', submitted:'نێردراو', allIn:'هەموو تۆمارەکانی ئەم ڕۆژە نێردراون.',
+  permitStudent:'خوێندکار', permitFrom:'لە', permitTo:'بۆ', permitReason:'هۆکار',
+  permitAdd:'زیادکردنی مۆڵەت', permitDone:'مۆڵەت تۆمارکرا', allModules:'هەموو وانەکان',
+  importHint:'هەر دێڕێک یەک خوێندکار:  ناو، ئیمەیڵ، A',
+  importBtn:'هاوردەکردنی خوێندکاران', imported:'خوێندکار زیادکرا', invite:'ناردنی کۆد',
+  inviteAll:'ناردن بۆ هەموو مامۆستایان', inviteSent:'ئیمەیڵ نێردرا', quotaLeft:'ئیمەیڵ ماوە بۆ ئەمڕۆ',
+  setSaved:'ڕێکخستن پاشەکەوتکرا', total:'کۆ', unexcused:'بێ مۆڵەت'
+ }
+};
+let LANG = localStorage.getItem('lang') || 'en';
+const t = k => (T[LANG][k] !== undefined ? T[LANG][k] : (T.en[k] || k));
+
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.body.classList.toggle('rtl', LANG === 'ku');
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+  $('#langBtn').textContent = LANG === 'en' ? 'KU' : 'EN';
+  $('#search').placeholder = t('searchStu');
+  localStorage.setItem('lang', LANG);
+}
+
+/* ------------------------------------------------------------ helpers */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const yearTxt = y => {
+  const n = String(y == null ? '' : y).replace(/\D/g, '');
+  return n ? t('year') + ' ' + n : '';
+};
+function scopeTxt(sc, year){
+  if (sc !== 'ALL') return t('group') + ' ' + sc;
+  const g = (S.boot && S.boot.groups && S.boot.groups[year]) || [];
+  return g.length > 1 ? g.join(' + ') : t('allGroups');
+}
+const esc = s => String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* progress bar + blocking "please wait" — every action uses these */
+let busyDepth = 0;
+function busyOn(msg, sub){
+  busyDepth++;
+  $('#busyT').textContent = msg || t('pleaseWait');
+  $('#busyS').textContent = sub || '';
+  $('#busy').classList.add('show');
+  const b = $('#bar'); b.style.opacity = 1; b.style.width = '28%';
+  setTimeout(() => { if (busyDepth) b.style.width = '72%'; }, 220);
+}
+function busyOff(){
+  busyDepth = Math.max(0, busyDepth - 1);
+  if (busyDepth) return;
+  $('#busy').classList.remove('show');
+  const b = $('#bar'); b.style.width = '100%';
+  setTimeout(() => { b.style.opacity = 0; b.style.width = '0'; }, 260);
+}
+/** Wraps any click that does work: button spinner + "Please wait" overlay. */
+async function run(btn, fn, msg, sub){
+  if (btn){ btn.classList.add('busy'); btn.disabled = true; }
+  busyOn(msg, sub);
+  try { return await fn(); }
+  catch(err){ toast(err.message || String(err), 'err'); return null; }
+  finally {
+    busyOff();
+    if (btn){ btn.classList.remove('busy'); btn.disabled = false; }
+  }
+}
+let toastTimer;
+function toast(msg, kind){
+  const el = $('#toast');
+  el.textContent = msg; el.className = 'show ' + (kind || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, kind === 'err' ? 4200 : 2600);
+}
+
+/* --------------------------------------------------------------- state */
+const S = {
+  code:'', role:'', boot:null, view:'login', mode:'teacher',
+  session:null, marks:{}, roster:[], dirty:false, draftTimer:null,
+  recModule:'', recTab:'students', admTab:'report', adm:null
+};
+const LS = {
+  get(k, d){ try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+
+/* ----------------------------------------------------------------- api */
+const CFG = window.UOR_CONFIG || { API_URL:'', APP_KEY:'' };
+
+async function api(action, payload, timeout){
+  const ctl = new AbortController();
+  const to = setTimeout(() => ctl.abort(), timeout || 25000);
+  try {
+    const r = await fetch(CFG.API_URL, {
+      method:'POST', signal: ctl.signal, redirect:'follow',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action, key: CFG.APP_KEY, payload: payload || {} })
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'Server error');
+    return j.data;
+  } finally { clearTimeout(to); }
+}
+
+/* ------------------------------------------------------------ routing */
+function show(view, title, sub){
+  S.view = view;
+  ['login','home','roster','records','admin'].forEach(v =>
+    $('#v-' + v).classList.toggle('hide', v !== view));
+  $('#barTitle').textContent = title || t('appName');
+  $('#barSub').textContent = sub || (S.boot ? S.boot.settings.dept : t('appSub'));
+  $('#backBtn').classList.toggle('hide', view === 'login' || view === 'home');
+  $('#outBtn').classList.toggle('hide', view === 'login');
+  $('.footbar') && $('.footbar').classList.toggle('hide', view !== 'roster');
+  window.scrollTo(0, 0);
+}
+$('#backBtn').onclick = () => {
+  if (S.view === 'roster' && S.dirty) saveDraft(true);
+  if (S.view === 'admin' || S.view === 'records' || S.view === 'roster') renderHome();
+};
+$('#outBtn').onclick = () => {
+  LS.del('code'); LS.del('boot'); S.code = ''; S.boot = null;
+  $('#inCode').value = ''; $('#inCode').classList.add('code-in');
+  $('#stepPin').classList.add('hide'); $('#stepCode').classList.remove('hide');
+  show('login');
+};
+$('#langBtn').onclick = () => { LANG = LANG === 'en' ? 'ku' : 'en'; applyLang(); rerender(); };
+function rerender(){
+  if (S.view === 'home')    renderHome();
+  if (S.view === 'records') renderRecords();
+  if (S.view === 'admin')   renderAdmin();
+  if (S.view === 'roster')  { renderHourHead(); renderRoster(); }
+}
+
+/* ---------------------------------------------------------------- login */
+$('#segT').onclick = () => { S.mode = 'teacher'; $('#segT').classList.add('on'); $('#segA').classList.remove('on'); };
+$('#segA').onclick = () => { S.mode = 'admin';   $('#segA').classList.add('on'); $('#segT').classList.remove('on'); };
+
+/* the one field takes either a code or a registered university email */
+$('#inCode').addEventListener('input', e => {
+  e.target.classList.toggle('code-in', e.target.value.indexOf('@') < 0);
+});
+
+$('#loginBtn').onclick = e => run(e.currentTarget, async () => {
+  const v = $('#inCode').value.trim();
+  if (!v) { toast(t('codeOrEmail'), 'err'); return; }
+
+  if (v.indexOf('@') > 0) {                       // email → one-time PIN
+    const r = await api('requestPin', { email: v });
+    S.pinEmail = v.toLowerCase();
+    $('#pinTo').textContent = S.pinEmail;
+    $('#inPin').value = '';
+    $('#stepCode').classList.add('hide');
+    $('#stepPin').classList.remove('hide');
+    toast(r.message, 'good');
+    setTimeout(() => $('#inPin').focus(), 120);
+    return;
+  }
+
+  const res = await api('login', { code: v, mode: S.mode });
+  await enterApp(v, res);
+}, t('signingIn'));
+
+$('#pinBtn').onclick = e => run(e.currentTarget, async () => {
+  const pin = $('#inPin').value.trim();
+  if (pin.length < 4) { toast(t('enterPin'), 'err'); return; }
+  const res = await api('verifyPin', { email: S.pinEmail, pin });
+  $('#stepPin').classList.add('hide');
+  $('#stepCode').classList.remove('hide');
+  await enterApp(res.code, res);
+}, t('checkingPin'));
+
+$('#pinResend').onclick = e => run(e.currentTarget, async () => {
+  const r = await api('requestPin', { email: S.pinEmail });
+  toast(r.message, 'good');
+}, t('checkingEmail'));
+
+$('#pinBack').onclick = () => {
+  $('#stepPin').classList.add('hide');
+  $('#stepCode').classList.remove('hide');
+};
+
+/** Shared by both sign-in routes. */
+async function enterApp(code, res){
+  S.code = code; S.role = res.role;
+  LS.set('code', code);
+  const wantsAdmin = (S.mode === 'admin') && (res.role === 'admin' || res.role === 'head');
+  if (res.isTeacher && !wantsAdmin) await loadBoot(true);
+  else await loadAdmin();
+}
+
+$('#inCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('#loginBtn').click(); });
+$('#inPin').addEventListener('keydown',  e => { if (e.key === 'Enter') $('#pinBtn').click(); });
+
+$('#forgotLink').onclick = e => {
+  e.preventDefault();
+  openSheet(`
+    <h3>${esc(t('forgotTitle'))}</h3>
+    <p class="sub">${esc(t('forgotSub'))}</p>
+    <label class="f"><span class="lb">${esc(t('email'))}</span>
+      <input id="recEmail" type="email" inputmode="email" placeholder="name@uor.edu.krd"></label>
+    <button class="btn" id="recBtn"><span class="lbl">${esc(t('send'))}</span></button>`);
+  $('#recBtn').onclick = ev => run(ev.currentTarget, async () => {
+    const email = $('#recEmail').value.trim();
+    const r = await api('recoverCode', { email });
+    closeSheet(); toast(r.message || t('recovered'), 'good');
+  }, t('sending'));
+};
+
+/* ------------------------------------------------------------ bootstrap */
+async function loadBoot(fresh){
+  const cached = LS.get('boot');
+  if (cached && !fresh){ S.boot = cached; renderHome(); }
+  const data = await api('bootstrap', { code: S.code });
+  S.boot = data; LS.set('boot', data);
+  renderHome();
+  flushPending();
+}
+
+/* --------------------------------------------------------------- home */
+function renderHome(){
+  const b = S.boot; if (!b) return;
+  show('home', b.teacher.name, b.settings.term);
+
+  /* today's classes */
+  const mById = {}; b.modules.forEach(m => { mById[m.id] = m; });
+  const nowHM = new Date().toTimeString().slice(0,5);
+  const slots = b.today.slots;
+  $('#todaySlots').innerHTML = slots.length ? slots.map(s => {
+    const m = mById[s.module] || { name: s.module };
+    const live = nowHM >= s.start && nowHM <= s.end;
+    const sid = [b.today.date, s.module, s.scope, s.start.replace(':','')].join('_');
+    const done = (b.sessions || []).some(x => x.id === sid && x.status === 'final');
+    return `<div class="slot ${live?'now':''}">
+      <div class="time">${esc(s.start)}<br>${esc(s.end)}</div>
+      <div class="s"><b>${esc(LANG==='ku'&&m.nameKu?m.nameKu:m.name)}</b>
+        <span>${[s.hours + ' ' + t('hours'), scopeTxt(s.scope, s.year), yearTxt(s.year)]
+                 .filter(Boolean).map(esc).join(' · ')}</span></div>
+      ${done ? `<span class="pill ok">✓</span>`
+             : `<button class="btn sm" data-take="${esc(s.module)}" data-scope="${esc(s.scope)}"
+                 data-hours="${s.hours}" data-start="${esc(s.start)}"><span class="lbl">${esc(t('take'))}</span></button>`}
+    </div>`;
+  }).join('') : `<p class="muted" style="padding:6px 2px">${esc(t('noClasses'))}</p>`;
+
+  /* module cards, grouped by study year */
+  const years = [];
+  b.modules.forEach(m => { if (years.indexOf(m.year) < 0) years.push(m.year); });
+  years.sort();
+  $('#moduleList').innerHTML = years.map(y => {
+    const head = years.length > 1
+      ? `<div class="sec-t" style="margin:14px 2px 8px">${esc(yearTxt(y))}</div>` : '';
+    return head + b.modules.filter(m => m.year === y).map(m => `
+      <div class="mod">
+        <div class="dot">${esc(m.id.slice(0,3))}</div>
+        <div class="m"><b>${esc(LANG==='ku'&&m.nameKu?m.nameKu:m.name)}</b>
+          <span>${m.weekly} ${esc(t('hours'))}/${esc(t('perWeek'))} · ${m.weekly*m.weeks} ${esc(t('plannedH')).toLowerCase()}</span></div>
+        <div class="acts">
+          <button class="btn sm sec" data-rec-open="${esc(m.id)}"><span class="lbl">${esc(t('records'))}</span></button>
+          <button class="btn sm" data-pick="${esc(m.id)}"><span class="lbl">${esc(t('take'))}</span></button>
+        </div>
+      </div>`).join('');
+  }).join('');
+
+  $('#adminEntry').classList.toggle('hide', !(b.teacher.role === 'admin' || b.teacher.role === 'head'));
+  renderPending();
+}
+
+$('#toAdminBtn').onclick = e => run(e.currentTarget, loadAdmin, t('loading'));
+
+/* delegated clicks on home */
+$('#v-home').addEventListener('click', e => {
+  const take = e.target.closest('[data-take]');
+  if (take) return run(take, () => openSession(take.dataset.take, take.dataset.scope,
+                    Number(take.dataset.hours), take.dataset.start), t('loading'));
+  const pick = e.target.closest('[data-pick]');
+  if (pick) return chooseScope(pick.dataset.pick);
+  const rec = e.target.closest('[data-rec-open]');
+  if (rec) return run(rec, () => { S.recModule = rec.dataset.recOpen; S.recTab = 'students'; return loadRecords(); }, t('loading'));
+});
+
+/* ------------------------------------------------- choose A / B / ALL */
+function chooseScope(moduleId){
+  const b = S.boot;
+  const m = b.modules.find(x => x.id === moduleId) || {};
+  const byScope = {};
+  b.schedule.filter(s => s.module === moduleId)
+            .forEach(s => { if (!byScope[s.scope]) byScope[s.scope] = s; });
+
+  /* the groups that actually exist in this module's year */
+  const groups = (b.groups && b.groups[m.year]) || ['A','B'];
+  const scopes = ['ALL'].concat(groups);
+
+  openSheet(`
+    <h3>${esc(LANG==='ku'&&m.nameKu?m.nameKu:m.name)}</h3>
+    <p class="sub">${esc(yearTxt(m.year))} · ${esc(t('chooseGroupSub'))}</p>
+    ${scopes.map(sc => {
+      const s = byScope[sc];
+      const hrs = s ? s.hours : (sc === 'ALL' ? (m.theory || m.weekly || 2) : (m.prac || 2));
+      const lbl = sc === 'ALL' ? t('allGroups') : t('group') + ' ' + sc;
+      return `<button class="btn ${sc==='ALL'?'':'sec'}" style="margin-bottom:9px"
+        data-go="${esc(moduleId)}" data-sc="${esc(sc)}" data-h="${hrs}" data-st="${s?esc(s.start):''}">
+        <span class="lbl">${esc(lbl)} · ${hrs} ${esc(t('hours'))}</span></button>`;
+    }).join('')}
+    <label class="f" style="margin-top:10px"><span class="lb">${esc(t('date'))}</span>
+      <input type="date" id="sessDate" value="${new Date().toISOString().slice(0,10)}"></label>`);
+}
+
+/* ------------------------------------------------------------- roster */
+async function openSession(moduleId, scope, hours, start, date){
+  const data = await api('openSession', {
+    code: S.code, moduleId, scope, hours, start, date: date || S.boot.today.date
+  });
+  S.session = data;
+  S.roster  = data.roster;
+  S.marks   = {};
+  const blank = 'P'.repeat(data.hours);
+  data.roster.forEach(s => {
+    let m = (data.draft && data.draft[s.id]) ? String(data.draft[s.id]) : blank;
+    if (!data.draft && s.permit) m = 'E'.repeat(data.hours);
+    S.marks[s.id] = (m + blank).slice(0, data.hours);
+  });
+  /* an unsent local draft always wins over the server copy */
+  const local = LS.get('draft_' + data.sessionId);
+  if (local) Object.assign(S.marks, local);
+
+  S.dirty = false;
+  closeSheet();
+  show('roster', data.module, [data.date, yearTxt(data.year),
+       scopeTxt(data.scope, data.year), data.hours + ' ' + t('hours')]
+       .filter(Boolean).join(' · '));
+  $('#search').value = '';
+  renderHourHead(); renderRoster();
+  $('#savedNote').textContent = data.status === 'final'
+      ? (data.editable ? t('finalLbl') + ' · ' + t('reopen') : t('locked')) : '';
+  $('#finalBtn').classList.toggle('hide', !data.editable);
+  $('#draftBtn').classList.toggle('hide', !data.editable);
+}
+
+function renderHourHead(){
+  const h = S.session.hours;
+  $('#hourHead').innerHTML =
+    `<span class="sp">${esc(t('name'))}</span>` +
+    Array.from({length:h}, (_,i) => `<button data-col="${i}">H${i+1}</button>`).join('');
+}
+
+function renderRoster(filter){
+  const q = (filter || '').trim().toLowerCase();
+  const list = q ? S.roster.filter(s => s.name.toLowerCase().includes(q)) : S.roster;
+  const h = S.session.hours;
+  let html = '';
+  for (const s of list){
+    const m = S.marks[s.id] || 'P'.repeat(h);
+    const flagged = m.includes('A');
+    html += `<div class="stu ${flagged?'flagged':''}" data-sid="${esc(s.id)}">
+      <div class="n"><b>${esc(s.name)}</b><span>${esc(s.group)}${s.permit?' · '+esc(s.permit):''}</span></div>
+      <div class="cells">${Array.from({length:h},(_,i)=>
+        `<button class="hr" data-m="${m[i]||'P'}" data-i="${i}">${m[i]||'P'}</button>`).join('')}</div>
+    </div>`;
+  }
+  $('#rosterBody').innerHTML = html || `<div class="empty"><b>—</b></div>`;
+  updateCounts();
+}
+
+function updateCounts(){
+  let a = 0, e = 0, p = 0;
+  Object.values(S.marks).forEach(m => {
+    if (m.includes('A')) a++; else if (m.includes('E')) e++; else p++;
+  });
+  $('#cPresent').textContent = p; $('#cAbsent').textContent = a; $('#cExcused').textContent = e;
+}
+
+const CYCLE = { P:'A', A:'E', E:'L', L:'P' };
+$('#rosterBody').addEventListener('click', e => {
+  const cell = e.target.closest('.hr'); if (!cell) return;
+  if (S.session && !S.session.editable) { toast(S.session.lockedReason, 'err'); return; }
+  const row = cell.closest('.stu'); const sid = row.dataset.sid;
+  const i = Number(cell.dataset.i);
+  const cur = S.marks[sid] || 'P'.repeat(S.session.hours);
+  const next = CYCLE[cur[i]] || 'A';
+  S.marks[sid] = cur.slice(0,i) + next + cur.slice(i+1);
+  cell.dataset.m = next; cell.textContent = next;
+  row.classList.toggle('flagged', S.marks[sid].includes('A'));
+  updateCounts(); markDirty();
+  if (navigator.vibrate) navigator.vibrate(8);
+});
+
+/* tap a column header = set that hour for everyone shown */
+$('#hourHead').addEventListener('click', e => {
+  const b = e.target.closest('[data-col]'); if (!b) return;
+  if (S.session && !S.session.editable) return;
+  const i = Number(b.dataset.col);
+  const shown = $$('#rosterBody .stu').map(el => el.dataset.sid);
+  const anyPresent = shown.some(sid => (S.marks[sid] || '')[i] !== 'A');
+  shown.forEach(sid => {
+    const cur = S.marks[sid] || 'P'.repeat(S.session.hours);
+    S.marks[sid] = cur.slice(0,i) + (anyPresent ? 'A' : 'P') + cur.slice(i+1);
+  });
+  renderRoster($('#search').value); markDirty();
+});
+
+/* one tap resets the whole list to present */
+$('#allPresentBtn').onclick = () => {
+  if (S.session && !S.session.editable) return;
+  const blank = 'P'.repeat(S.session.hours);
+  Object.keys(S.marks).forEach(sid => { S.marks[sid] = blank; });
+  renderRoster($('#search').value); markDirty();
+  toast(t('allPresent'), 'good');
+};
+
+let searchTimer;
+$('#search').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => renderRoster(e.target.value), 110);
+});
+
+function markDirty(){
+  S.dirty = true;
+  LS.set('draft_' + S.session.sessionId, S.marks);     // instant local safety net
+  $('#savedNote').textContent = '•';
+  clearTimeout(S.draftTimer);
+  S.draftTimer = setTimeout(() => saveDraft(true), 9000);   // quiet background save
+}
+
+/* only the session's identity travels to the server — never the whole roster */
+function sessMeta(){
+  const s = S.session;
+  return { sessionId:s.sessionId, date:s.date, year:s.year, moduleId:s.moduleId,
+           module:s.module, scope:s.scope, hours:s.hours };
+}
+
+async function saveDraft(silent){
+  if (!S.session) return;
+  const body = { code:S.code, session:sessMeta(), marks:S.marks };
+  try {
+    await api('saveDraft', body, 12000);
+    S.dirty = false;
+    $('#savedNote').textContent = t('saved') + ' · ' + new Date().toTimeString().slice(0,5);
+  } catch(e){
+    $('#savedNote').textContent = t('offline');
+    if (!silent) throw e;
+  }
+}
+$('#draftBtn').onclick = e => run(e.currentTarget, async () => {
+  await saveDraft(false);
+  toast(t('saved'), 'good');
+}, t('saving'));
+
+/* ------------------------------------------------------------ finalize */
+$('#finalBtn').onclick = () => {
+  const absent = Object.values(S.marks).filter(m => m.includes('A')).length;
+  openSheet(`
+    <h3>${esc(t('confirmFinal'))}</h3>
+    <p class="sub">${esc(t('confirmFinalSub'))}</p>
+    <div class="kv"><span>${esc(t('absentH'))}</span><b>${absent}</b></div>
+    <div class="kv"><span>${esc(t('module'))}</span><b>${esc(S.session.module)}</b></div>
+    <div class="kv"><span>${esc(t('hours'))}</span><b>${S.session.hours}</b></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn ghost" data-close><span class="lbl">${esc(t('cancel'))}</span></button>
+      <button class="btn gold" id="goFinal"><span class="lbl">${esc(t('yes'))}</span></button>
+    </div>`);
+  $('#goFinal').onclick = e => run(e.currentTarget, doFinalize, t('sending'));
+};
+
+async function doFinalize(){
+  const body = { code:S.code, session:sessMeta(), marks:S.marks };
+  try {
+    const r = await api('finalizeSession', body, 60000);
+    LS.del('draft_' + S.session.sessionId);
+    closeSheet();
+    toast(t('finalized') + (r.emails ? ` · ${r.emails} ${t('emailsSent')}` : ''), 'good');
+    await loadBoot(true);
+  } catch(err){
+    /* no connection → keep it and send later */
+    const q = LS.get('pending', []);
+    q.push(body); LS.set('pending', q);
+    LS.del('draft_' + S.session.sessionId);
+    closeSheet();
+    toast(t('queued'), 'good');
+    renderHome();
+  }
+}
+
+function renderPending(){
+  const q = LS.get('pending', []);
+  $('#pendingBox').classList.toggle('hide', q.length === 0);
+  if (q.length) $('#pendingTxt').textContent = q.length + ' × ' + t('sessionOf');
+}
+$('#syncBtn').onclick = e => run(e.currentTarget, flushPending, t('sending'));
+
+async function flushPending(){
+  const q = LS.get('pending', []);
+  if (!q.length) return;
+  const left = [];
+  for (const body of q){
+    try { body.code = S.code; await api('finalizeSession', body, 60000); }
+    catch(e){ left.push(body); }
+  }
+  LS.set('pending', left);
+  renderPending();
+  if (!left.length) { toast(t('done'), 'good'); await loadBoot(true); }
+}
+
+/* ------------------------------------------------- teacher records view */
+async function loadRecords(){
+  const data = await api('teacherReport', { code:S.code, moduleId:S.recModule });
+  S.records = data.rows; S.recGen = data.generated;
+  if (S.recTab === 'sessions'){
+    const h = await api('sessionHistory', { code:S.code, moduleId:S.recModule });
+    S.history = h.rows;
+  }
+  renderRecords();
+}
+
+function renderRecords(){
+  const b = S.boot;
+  const m = b.modules.find(x => x.id === S.recModule);
+  show('records', t('records'), m ? (LANG==='ku'&&m.nameKu?m.nameKu:m.name) : '');
+
+  const multiYear = b.modules.some(x => x.year !== b.modules[0].year);
+  $('#recTabs').innerHTML = b.modules.map(x =>
+    `<button class="${x.id===S.recModule?'on':''}" data-mod="${esc(x.id)}">${
+      multiYear ? esc(yearTxt(x.year)) + ' · ' : ''
+    }${esc(LANG==='ku'&&x.nameKu?x.nameKu:x.name)}</button>`).join('');
+  $$('#v-records .tabs [data-rec]').forEach(el => el.classList.toggle('on', el.dataset.rec === S.recTab));
+
+  if (S.recTab === 'sessions') return renderSessions();
+
+  const rows = (S.records || []);
+  if (!rows.length){ $('#recBody').innerHTML = `<div class="empty"><b>${esc(t('noRecords'))}</b></div>`; return; }
+
+  const planned = rows[0] ? rows[0].planned : 0;
+  const held    = rows[0] ? rows[0].heldHours : 0;
+  $('#recBody').innerHTML = `
+    <div class="row" style="margin-bottom:12px;gap:7px">
+      <button class="btn sm sec" data-export="xlsx" style="flex:1">
+        <span class="lbl">⤓ ${esc(t('exportX'))}</span></button>
+      <button class="btn sm sec" data-export="docx" style="flex:1">
+        <span class="lbl">⤓ ${esc(t('exportW'))}</span></button>
+    </div>
+    <div class="kv"><span>${esc(t('plannedH'))}</span><b>${planned} h</b></div>
+    <div class="kv"><span>${esc(t('heldH'))}</span><b>${held} h</b></div>
+    <div class="tscroll" style="margin-top:10px"><table><thead><tr>
+      <th>${esc(t('name'))}</th><th>${esc(t('group'))}</th>
+      <th style="text-align:end">${esc(t('absentH'))}</th>
+      <th style="text-align:end">%</th>
+      <th style="text-align:end">${esc(t('left'))}</th>
+    </tr></thead><tbody>${rows.map(r => `
+      <tr data-stu="${esc(r.studentId)}">
+        <td><b>${esc(r.name)}</b>
+          <div class="bar ${r.level}"><i style="width:${Math.min(100, r.pctUnexcused*5)}%"></i></div></td>
+        <td>${esc(r.group)}</td>
+        <td class="num">${r.absentHours}${r.excusedHours?`<span class="muted"> +${r.excusedHours}</span>`:''}</td>
+        <td class="num"><span class="pill ${r.level}">${r.pctUnexcused}%</span></td>
+        <td class="num">${r.remainingHours}</td>
+      </tr>`).join('')}</tbody></table></div>
+    <p class="muted" style="margin-top:10px">${esc(t('generated'))}: ${esc(S.recGen||'')}</p>`;
+}
+
+function renderSessions(){
+  const rows = S.history || [];
+  $('#recBody').innerHTML = rows.length ? `
+    <div class="tscroll"><table><thead><tr>
+      <th>${esc(t('date'))}</th><th>${esc(t('group'))}</th>
+      <th style="text-align:end">${esc(t('hours'))}</th>
+      <th style="text-align:end">${esc(t('absent'))}</th><th></th>
+    </tr></thead><tbody>${rows.map(r => `
+      <tr><td>${esc(r.date)}</td><td>${r.scope==='ALL'?'A + B':esc(r.scope)}</td>
+        <td class="num">${r.hours}</td><td class="num">${r.absent}</td>
+        <td><span class="pill ${r.status==='final'?'ok':'info'}">${esc(r.status==='final'?t('finalLbl'):t('draft'))}</span></td>
+      </tr>`).join('')}</tbody></table></div>`
+    : `<div class="empty"><b>${esc(t('noRecords'))}</b></div>`;
+}
+
+$('#recTabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-mod]'); if (!b) return;
+  S.recModule = b.dataset.mod;
+  run(b, loadRecords, t('loading'));
+});
+$('#v-records').addEventListener('click', e => {
+  const ex = e.target.closest('[data-export]');
+  if (ex){
+    const m = S.boot.modules.find(x => x.id === S.recModule);
+    return doExport(ex, { format: ex.dataset.export, moduleId: S.recModule,
+                          title: (m ? m.name : 'Attendance') });
+  }
+  const tb = e.target.closest('[data-rec]');
+  if (tb){ S.recTab = tb.dataset.rec; return run(tb, loadRecords, t('loading')); }
+  const row = e.target.closest('[data-stu]');
+  if (row) return run(null, () => studentDetail(row.dataset.stu), t('loading'));
+});
+
+/* ---------------------------------------------------- Excel / Word export */
+function downloadB64(b64, filename, mime){
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([arr], { type: mime }));
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function doExport(btn, opts){
+  return run(btn, async () => {
+    const f = await api('exportReport', Object.assign({ code: S.code }, opts), 180000);
+    downloadB64(f.b64, f.filename, f.mime);
+    toast(t('downloaded') + ' · ' + f.filename, 'good');
+  }, t('exporting'), opts.format === 'docx' ? 'Word' : 'Excel');
+}
+
+async function studentDetail(studentId){
+  const r = await api('studentDetail', { code:S.code, studentId, moduleId:S.recModule });
+  const stu = (S.records || []).find(x => x.studentId === studentId) || {};
+  openSheet(`
+    <h3>${esc(stu.name || studentId)}</h3>
+    <p class="sub">${esc(stu.module || '')} · ${esc(t('group'))} ${esc(stu.group||'')}</p>
+    <div class="kv"><span>${esc(t('unexcused'))}</span><b>${stu.absentHours||0} h · ${stu.pctUnexcused||0}%</b></div>
+    <div class="kv"><span>${esc(t('total'))}</span><b>${stu.pctTotal||0}%</b></div>
+    <div class="kv"><span>${esc(t('remainingH'))}</span><b>${stu.remainingHours||0} h</b></div>
+    <div class="sec-t">${esc(t('detailTitle'))}</div>
+    ${r.rows.length ? `<table><tbody>${r.rows.map(x => `
+      <tr><td>${esc(x.date)}</td>
+        <td style="font-family:ui-monospace,monospace;letter-spacing:.14em">${esc(x.marks)}</td>
+        <td class="num">${x.absent} h</td>
+        <td><span class="pill ${x.status==='Absent'?'final':'info'}">${esc(x.status)}</span></td></tr>`).join('')}
+      </tbody></table>` : `<p class="muted">${esc(t('noDetail'))}</p>`}`);
+}
+
+/* ---------------------------------------------------------------- admin */
+async function loadAdmin(){
+  const d = await api('adminBootstrap', { code: S.code });
+  S.adm = d; S.role = 'admin';
+  if (!S.boot) { try { await loadBoot(true); } catch(e){} }
+  renderAdmin();
+}
+
+function renderAdmin(){
+  show('admin', t('adminPanel'), S.adm ? S.adm.admin.name : '');
+  $$('#admTabs button').forEach(b => b.classList.toggle('on', b.dataset.adm === S.admTab));
+  const body = $('#admBody');
+  const d = S.adm;
+
+  if (S.admTab === 'report'){
+    body.innerHTML = `<div class="card">
+      <label class="f"><span class="lb">${esc(t('year'))}</span>
+        <select id="admYear"><option value="">${esc(t('allYears'))}</option>
+          ${(d.years||[]).map(y=>`<option value="${esc(y)}">${esc(yearTxt(y))}</option>`).join('')}</select></label>
+      <label class="f"><span class="lb">${esc(t('module'))}</span>
+        <select id="admMod"><option value="">${esc(t('allModules'))}</option>
+          ${d.modules.map(m=>`<option value="${esc(m.id)}">${esc(yearTxt(m.year))} · ${esc(m.name)}</option>`).join('')}</select></label>
+      <button class="btn" id="admRun"><span class="lbl">${esc(t('refresh'))}</span></button>
+      <div class="row" style="margin-top:9px;gap:7px">
+        <button class="btn sm sec" data-aexport="xlsx" style="flex:1">
+          <span class="lbl">⤓ ${esc(t('exportX'))}</span></button>
+        <button class="btn sm sec" data-aexport="docx" style="flex:1">
+          <span class="lbl">⤓ ${esc(t('exportW'))}</span></button>
+      </div>
+      <div id="admReportOut" style="margin-top:14px"></div></div>`;
+    $('#admRun').onclick = e => run(e.currentTarget, async () => {
+      const r = await api('adminReport', { code:S.code, moduleId: $('#admMod').value,
+                                           year: $('#admYear').value });
+      $('#admReportOut').innerHTML = r.rows.length ? `<div class="tscroll"><table><thead><tr>
+        <th>${esc(t('name'))}</th><th>${esc(t('module'))}</th>
+        <th style="text-align:end">${esc(t('absentH'))}</th><th style="text-align:end">%</th>
+        <th style="text-align:end">${esc(t('left'))}</th></tr></thead><tbody>
+        ${r.rows.map(x=>`<tr><td><b>${esc(x.name)}</b><span class="muted"> ${esc(yearTxt(x.year))} ${esc(x.group)}</span></td>
+          <td class="muted">${esc(x.module)}</td><td class="num">${x.absentHours}</td>
+          <td class="num"><span class="pill ${x.level}">${x.pctUnexcused}%</span></td>
+          <td class="num">${x.remainingHours}</td></tr>`).join('')}</tbody></table></div>`
+        : `<div class="empty"><b>${esc(t('noRecords'))}</b></div>`;
+    }, t('loading'));
+  }
+
+  if (S.admTab === 'audit'){
+    body.innerHTML = `<div class="card">
+      <label class="f"><span class="lb">${esc(t('date'))}</span>
+        <input type="date" id="audDate" value="${new Date().toISOString().slice(0,10)}"></label>
+      <button class="btn" id="audRun"><span class="lbl">${esc(t('refresh'))}</span></button>
+      <div id="audOut" style="margin-top:14px"></div></div>`;
+    $('#audRun').onclick = e => run(e.currentTarget, async () => {
+      const r = await api('missingAudit', { code:S.code, date: $('#audDate').value });
+      $('#audOut').innerHTML = `
+        <div class="kv"><span>${esc(t('expected'))}</span><b>${r.expected}</b></div>
+        <div class="kv"><span>${esc(t('submitted'))}</span><b>${r.submitted.length}</b></div>
+        <div class="sec-t">${esc(t('missing'))}</div>
+        ${r.missing.length ? r.missing.map(m=>`<div class="slot"><div class="s"><b>${esc(m.label)}</b>
+            <span>${esc(m.teacher)}</span></div><span class="pill final">!</span></div>`).join('')
+          : `<p class="muted">${esc(t('allIn'))}</p>`}`;
+    }, t('loading'));
+  }
+
+  if (S.admTab === 'permit'){
+    body.innerHTML = `<div class="card">
+      <label class="f"><span class="lb">${esc(t('permitStudent'))}</span>
+        <select id="pStu">${d.students.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.group)})</option>`).join('')}</select></label>
+      <label class="f"><span class="lb">${esc(t('module'))}</span>
+        <select id="pMod"><option value="ALL">${esc(t('allModules'))}</option>
+          ${d.modules.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}</select></label>
+      <div class="row"><label class="f" style="flex:1"><span class="lb">${esc(t('permitFrom'))}</span>
+        <input type="date" id="pFrom" value="${new Date().toISOString().slice(0,10)}"></label>
+      <label class="f" style="flex:1"><span class="lb">${esc(t('permitTo'))}</span>
+        <input type="date" id="pTo" value="${new Date().toISOString().slice(0,10)}"></label></div>
+      <label class="f"><span class="lb">${esc(t('permitReason'))}</span><input id="pWhy"></label>
+      <button class="btn" id="pAdd"><span class="lbl">${esc(t('permitAdd'))}</span></button></div>`;
+    $('#pAdd').onclick = e => run(e.currentTarget, async () => {
+      const sel = $('#pStu'), name = sel.options[sel.selectedIndex].text.replace(/\s*\(.\)$/,'');
+      await api('addPermit', { code:S.code, permit:{
+        studentId: sel.value, name, moduleId: $('#pMod').value,
+        from: $('#pFrom').value, to: $('#pTo').value, reason: $('#pWhy').value }});
+      toast(t('permitDone'), 'good'); $('#pWhy').value = '';
+    }, t('saving'));
+  }
+
+  if (S.admTab === 'teachers'){
+    body.innerHTML = `<div class="card tight">
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn sm gold" id="invAll" style="flex:1"><span class="lbl">${esc(t('inviteAll'))}</span></button></div>
+      <p class="muted" style="margin-bottom:10px">${d.quota} ${esc(t('quotaLeft'))}</p>
+      ${d.teachers.map(x=>`<div class="mod"><div class="dot">${esc((x.modules||'--').slice(0,3))}</div>
+        <div class="m"><b>${esc(x.name)}</b><span>${esc(x.email||'—')} · <code>${esc(x.code)}</code></span></div>
+        <div class="acts"><button class="btn sm sec" data-inv="${esc(x.id)}">
+          <span class="lbl">${esc(t('invite'))}</span></button></div></div>`).join('')}</div>`;
+    $('#invAll').onclick = e => run(e.currentTarget, async () => {
+      const r = await api('sendInvite', { code:S.code, teacherId:'ALL' }, 120000);
+      toast(r.sent + ' ' + t('inviteSent'), 'good');
+    }, t('sending'));
+  }
+
+  if (S.admTab === 'students'){
+    const yrs = (d.years && d.years.length) ? d.years : ['Year1','Year2','Year3','Year4'];
+    body.innerHTML = `<div class="card">
+      <label class="f"><span class="lb">${esc(t('year'))}</span>
+        <select id="impYear">${['Year1','Year2','Year3','Year4'].map(y=>
+          `<option value="${y}">${esc(yearTxt(y))}</option>`).join('')}</select></label>
+      <p class="muted" style="margin-bottom:9px">${esc(t('importHint'))}</p>
+      <textarea id="impTxt" placeholder="Ahmed Karim, ahmed@uor.edu.krd, A&#10;Sara Jamal, sara@uor.edu.krd, B"></textarea>
+      <button class="btn" id="impBtn" style="margin-top:10px"><span class="lbl">${esc(t('importBtn'))}</span></button>
+      <div class="sec-t">${esc(t('students'))} · ${d.students.length}</div>
+      <div class="tscroll"><table><tbody>${d.students.slice(0,500).map(s=>
+        `<tr><td class="muted">${esc(s.id)}</td><td><b>${esc(s.name)}</b></td>
+         <td class="muted">${esc(yearTxt(s.year))}</td>
+         <td>${esc(s.group)}</td><td class="muted">${esc(s.email||'—')}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+    $('#impBtn').onclick = e => run(e.currentTarget, async () => {
+      const r = await api('importStudents', { code:S.code, year: $('#impYear').value,
+                                              text: $('#impTxt').value }, 60000);
+      toast(r.added + ' ' + t('imported'), 'good');
+      $('#impTxt').value = '';
+      await loadAdmin();
+    }, t('saving'));
+  }
+
+  if (S.admTab === 'settings'){
+    const keys = ['WEEKS','APP_URL','DEPARTMENT','TERM','WARN1_PCT','WARN2_PCT','FINAL_PCT',
+                  'DEPRIVE_UNEXCUSED_PCT','DEPRIVE_TOTAL_PCT','EMAILS_ENABLED'];
+    body.innerHTML = `<div class="card">${keys.map(k=>`
+      <label class="f"><span class="lb">${esc(k)}</span>
+        <input data-set="${esc(k)}" value="${esc(d.settings[k] !== undefined ? d.settings[k] : '')}"></label>`).join('')}
+      <button class="btn" id="setSave"><span class="lbl">${esc(t('save'))}</span></button></div>`;
+    $('#setSave').onclick = e => run(e.currentTarget, async () => {
+      for (const el of $$('[data-set]')) await api('saveSetting', { code:S.code, key:el.dataset.set, value:el.value });
+      toast(t('setSaved'), 'good');
+      await loadAdmin();
+    }, t('saving'));
+  }
+}
+$('#admTabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-adm]'); if (!b) return;
+  S.admTab = b.dataset.adm; renderAdmin();
+});
+$('#admBody').addEventListener('click', e => {
+  const ex = e.target.closest('[data-aexport]');
+  if (ex){
+    const y = $('#admYear'), m = $('#admMod');
+    return doExport(ex, { format: ex.dataset.aexport, scopeAll: true,
+                          year: y ? y.value : '', moduleId: m ? m.value : '',
+                          title: 'Attendance report' });
+  }
+  const b = e.target.closest('[data-inv]'); if (!b) return;
+  run(b, async () => {
+    await api('sendInvite', { code:S.code, teacherId:b.dataset.inv }, 60000);
+    toast(t('inviteSent'), 'good');
+  }, t('sending'));
+});
+
+/* ---------------------------------------------------------------- sheet */
+function openSheet(html){ $('#sheetBody').innerHTML = html; $('#sheet').classList.add('show'); }
+function closeSheet(){ $('#sheet').classList.remove('show'); }
+$('#sheet').addEventListener('click', e => {
+  if (e.target.closest('[data-close]')) return closeSheet();
+  const g = e.target.closest('[data-go]');
+  if (g){
+    const d = $('#sessDate');
+    run(g, () => openSession(g.dataset.go, g.dataset.sc, Number(g.dataset.h),
+                             g.dataset.st, d ? d.value : null), t('loading'));
+  }
+});
+
+/* ------------------------------------------------------------- startup */
+function netState(){ $('#net').classList.toggle('show', !navigator.onLine); }
+window.addEventListener('online',  () => { netState(); flushPending(); });
+window.addEventListener('offline', netState);
+
+/* save a draft if the teacher closes the app mid-session */
+window.addEventListener('pagehide', () => {
+  if (S.dirty && S.session) LS.set('draft_' + S.session.sessionId, S.marks);
+});
+
+(async function init(){
+  applyLang(); netState();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+  const urlCode = new URLSearchParams(location.search).get('c');
+  const saved = LS.get('code');
+  const code = urlCode || saved;
+  if (urlCode) history.replaceState({}, '', location.pathname);
+
+  if (!code){ show('login'); return; }
+
+  S.code = code; LS.set('code', code);
+  const cached = LS.get('boot');
+  if (cached){ S.boot = cached; renderHome(); }         // instant paint from cache
+  else busyOn(t('loading'));
+  try {
+    await loadBoot(true);
+  } catch(e){
+    if (!cached){ show('login'); toast(e.message || 'Connection failed', 'err'); }
+  } finally { if (!cached) busyOff(); }
+})();
+</script>
+</body>
+</html>
