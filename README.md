@@ -152,9 +152,41 @@ unexcused or 15 % including permits.
 ## Exporting
 
 **Excel** and **Word** buttons sit in the teacher's **Records** view (that module) and
-in **Administrator → Report** (any year, any module, or everything). The file is built
-on the server and downloaded straight to the phone or computer — real `.xlsx` and
-`.docx`, not CSV. Word is capped at 600 rows; for anything larger use Excel.
+in **Administrator → Report** (any year, any module, or everything). Real `.xlsx` and
+`.docx` built on the server and downloaded straight to the device. Word is capped at
+600 rows; for anything larger use Excel.
+
+The report itself is **Kurdish only** and has six columns, nothing else:
+
+| ژ | ناوی خوێندکار | قۆناغ | گروپ | وانە | ڕێژەی نائامادەبوون |
+|---|---|---|---|---|---|
+
+Excel is written as a right-to-left sheet; Word puts the columns in reverse order so
+the table reads right-to-left on the page. Anyone at or past the deprivation line is
+shaded red. Students on 0 % are left out — it is an absence report.
+
+Whatever filters are on screen apply to the file: **threshold** (≥5 %, ≥7.5 %, ≥10 %,
+above 10 %) and **date range**. With a date range, only absences inside those dates
+are counted, but the percentage is still out of the full term's planned hours, so the
+number means "how much of the term allowance was used up in this period".
+
+## Updating an installation that already ran
+
+Re-run **`setup()`** after pasting a new `Code.gs`. It never touches existing data —
+it only adds the settings rows that are missing (`DEPARTMENT_KU`, `AUDIT_ENABLED`).
+Settings rows that already exist keep their old values, so check these two by hand in
+the `Settings` tab:
+
+* **`ALLOWED_EMAIL_DOMAIN`** — clear it while testing with a non-university address.
+* **`ADMIN_EMAIL`** — whichever address should open the administrator panel. A Script
+  Property of the same name overrides the sheet, which is handy while the script is
+  still on a personal account.
+
+## Audit log
+
+`Audit_Logs` is off (`AUDIT_ENABLED = false`). It only ever recorded who did what; the
+app never reads it, so nothing depends on it. Turn it on in Settings if you ever need
+a trail for a dispute.
 
 ## Offline
 

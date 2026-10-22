@@ -3,7 +3,7 @@
    API calls are never cached: attendance that cannot be sent is queued by the
    page itself in localStorage and flushed when the connection returns.      */
 
-const CACHE = 'uor-att-v1';
+const CACHE = 'uor-att-v2';
 const SHELL = [
   './',
   './index.html',
@@ -11,7 +11,8 @@ const SHELL = [
   './manifest.webmanifest',
   './icon.svg',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon-maskable-512.png'
 ];
 
 self.addEventListener('install', e => {

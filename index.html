@@ -251,6 +251,18 @@ tbody tr:active{background:var(--navy-50)}
   font-size:12px;font-weight:600;text-align:center;padding:5px;display:none}
 #net.show{display:block}
 
+/* ---------- filters ---------- */
+.filters{border:1px solid var(--line);border-radius:12px;padding:0 12px;margin-bottom:12px;background:var(--card)}
+.filters summary{list-style:none;cursor:pointer;padding:11px 2px;font-size:13.5px;font-weight:650;color:var(--navy)}
+.filters summary::-webkit-details-marker{display:none}
+.filters summary::after{content:"▾";float:inline-end;color:var(--ink-3)}
+.filters[open] summary::after{content:"▴"}
+.filters .frow{display:flex;gap:9px;flex-wrap:wrap;padding-top:4px}
+.filters .frow .f{flex:1;min-width:120px}
+.filters .row{padding-bottom:12px}
+.chipbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chipbar .pill{cursor:default}
+
 .empty{text-align:center;padding:34px 16px;color:var(--ink-3)}
 .empty b{display:block;font-size:15px;color:var(--ink-2);margin-bottom:4px}
 .muted{color:var(--ink-3);font-size:12.5px}
@@ -319,6 +331,8 @@ tbody tr:active{background:var(--navy-50)}
           <button class="btn ghost sm" id="pinResend" style="flex:1"><span class="lbl" data-t="resend">Send again</span></button>
         </div>
       </div>
+      <button class="btn sec" id="installBtn" style="margin-bottom:12px">
+        <span class="lbl">⤓ <span data-t="installApp">Install the app</span></span></button>
       <p class="muted" style="text-align:center;padding:0 10px 20px" data-t="installTip">
         Tip: use “Add to Home Screen” to install this as an app — it then works without internet.
       </p>
@@ -386,8 +400,31 @@ tbody tr:active{background:var(--navy-50)}
       <div class="card tight">
         <div class="tabs" style="padding:0 0 10px">
           <button class="on" data-rec="students" data-t="students">Students</button>
+          <button data-rec="late" data-t="lateList">Late</button>
+          <button data-rec="excused" data-t="excusedList">Excused</button>
           <button data-rec="sessions" data-t="sessions">Sessions</button>
         </div>
+        <details class="filters" id="recFilters">
+          <summary data-t="filters">Filters</summary>
+          <div class="frow">
+            <label class="f"><span class="lb" data-t="threshold">Absence at least</span>
+              <select id="fPct">
+                <option value="" data-t="noFilter">No filter</option>
+                <option value="5">≥ 5%</option>
+                <option value="7.5">≥ 7.5%</option>
+                <option value="10">≥ 10%</option>
+                <option value="over10" data-t="over10">Above 10%</option>
+              </select></label>
+            <label class="f"><span class="lb" data-t="dateFrom">From</span>
+              <input type="date" id="fFrom"></label>
+            <label class="f"><span class="lb" data-t="dateTo">To</span>
+              <input type="date" id="fTo"></label>
+          </div>
+          <div class="row">
+            <button class="btn sm ghost" id="fClear" style="flex:1"><span class="lbl" data-t="clear">Clear</span></button>
+            <button class="btn sm" id="fApply" style="flex:2"><span class="lbl" data-t="apply">Apply</span></button>
+          </div>
+        </details>
         <div id="recBody"></div>
       </div>
     </div>
@@ -446,6 +483,16 @@ const T = {
   left:'Left', status:'Status', date:'Date', module:'Module', hours:'Hours', ok:'OK',
   warn1:'Notice', warn2:'Warning', final:'Final warning', deprived:'Deprived',
   noRecords:'No absences recorded yet.', markAll:'All', searchStu:'Search a student…', perWeek:'week',
+  lateList:'Late', excusedList:'Excused', filters:'Filters', threshold:'Absence at least',
+  noFilter:'No filter', over10:'Above 10%', dateFrom:'From', dateTo:'To',
+  apply:'Apply', clear:'Clear', times:'times', noLate:'No late arrivals recorded.',
+  noExcused:'No excused absences recorded.', filtered:'filtered',
+  alreadyTitle:'Already recorded', alreadySub:'This class was already submitted for this date.',
+  openAnyway:'Open and correct', notNow:'Not now', takenBy:'Recorded by', absentWere:'Absent',
+  installApp:'Install the app', installIOS:'On iPhone: open the Share menu and choose “Add to Home Screen”.',
+  installWait:'Your browser has not offered installation yet. Reload the page once, then try again.',
+  importFile:'Import from an Excel file', importCols:'Columns in order: name · email · year · group · phone',
+  chooseFile:'Choose file', reading:'Reading the file…', foundRows:'rows found',
   codeOrEmail:'Access code or university email',
   emailHint:'With an email address we send a one-time code to that inbox.',
   pinTitle:'Check your email', pinSub:'We sent a 6-digit code to',
@@ -491,6 +538,16 @@ const T = {
   left:'ماوە', status:'دۆخ', date:'بەروار', module:'وانە', hours:'کاتژمێر', ok:'باش',
   warn1:'ئاگاداری', warn2:'ئاگاداری ٢', final:'ئاگاداری کۆتایی', deprived:'محروم',
   noRecords:'هێشتا هیچ نائامادەبوونێک تۆمار نەکراوە.', markAll:'هەموو', searchStu:'گەڕان بۆ خوێندکار…', perWeek:'هەفتە',
+  lateList:'درەنگ', excusedList:'مۆڵەت', filters:'پاڵاوتن', threshold:'نائامادەبوون لانیکەم',
+  noFilter:'بێ پاڵاوتن', over10:'زیاتر لە ١٠٪', dateFrom:'لە', dateTo:'بۆ',
+  apply:'جێبەجێکردن', clear:'سڕینەوە', times:'جار', noLate:'هیچ درەنگێک تۆمار نەکراوە.',
+  noExcused:'هیچ مۆڵەتێک تۆمار نەکراوە.', filtered:'پاڵێوراو',
+  alreadyTitle:'پێشتر تۆمارکراوە', alreadySub:'ئامادەبوونی ئەم وانەیە بۆ ئەم بەروارە نێردراوە.',
+  openAnyway:'بیکەرەوە و ڕاستی بکەرەوە', notNow:'ئێستا نا', takenBy:'تۆمارکراوە لەلایەن', absentWere:'نائامادە',
+  installApp:'دابەزاندنی ئەپ', installIOS:'لە ئایفۆن: لە مێنیوی هاوبەشکردن «Add to Home Screen» هەڵبژێرە.',
+  installWait:'وێبگەڕەکەت هێشتا دابەزاندنی پێشنیار نەکردووە. لاپەڕەکە نوێ بکەرەوە و دووبارە هەوڵ بدە.',
+  importFile:'هاوردەکردن لە فایلی ئێکسڵ', importCols:'ستوونەکان بەم ڕیزبەندییە: ناو · ئیمەیڵ · قۆناغ · گروپ · تەلەفۆن',
+  chooseFile:'فایل هەڵبژێرە', reading:'خوێندنەوەی فایل…', foundRows:'ڕیز دۆزرایەوە',
   codeOrEmail:'کۆد یان ئیمەیڵی زانکۆ',
   emailHint:'بە ئیمەیڵ، کۆدێکی یەکجارەیی بۆ ئەو ئیمەیڵە دەنێرین.',
   pinTitle:'ئیمەیڵەکەت بپشکنە', pinSub:'کۆدێکی ٦ ژمارەیی نێردرا بۆ',
@@ -645,16 +702,19 @@ function rerender(){
 $('#segT').onclick = () => { S.mode = 'teacher'; $('#segT').classList.add('on'); $('#segA').classList.remove('on'); };
 $('#segA').onclick = () => { S.mode = 'admin';   $('#segA').classList.add('on'); $('#segT').classList.remove('on'); };
 
-/* the one field takes either a code or a registered university email */
+/* A real address, not merely something containing "@" — the admin code
+   Admin@Uor2026 contains one and must still be treated as a code. */
+const isEmail = v => /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(String(v).trim());
+
 $('#inCode').addEventListener('input', e => {
-  e.target.classList.toggle('code-in', e.target.value.indexOf('@') < 0);
+  e.target.classList.toggle('code-in', !isEmail(e.target.value));
 });
 
 $('#loginBtn').onclick = e => run(e.currentTarget, async () => {
   const v = $('#inCode').value.trim();
   if (!v) { toast(t('codeOrEmail'), 'err'); return; }
 
-  if (v.indexOf('@') > 0) {                       // email → one-time PIN
+  if (isEmail(v)) {                               // email → one-time PIN
     const r = await api('requestPin', { email: v });
     S.pinEmail = v.toLowerCase();
     $('#pinTo').textContent = S.pinEmail;
@@ -815,10 +875,31 @@ function chooseScope(moduleId){
 }
 
 /* ------------------------------------------------------------- roster */
-async function openSession(moduleId, scope, hours, start, date){
+async function openSession(moduleId, scope, hours, start, date, force){
   const data = await api('openSession', {
     code: S.code, moduleId, scope, hours, start, date: date || S.boot.today.date
   });
+
+  /* this class was already submitted — say so before opening it again */
+  if (data.alreadyTaken && !force){
+    openSheet(`
+      <h3>${esc(t('alreadyTitle'))}</h3>
+      <p class="sub">${esc(t('alreadySub'))}</p>
+      <div class="kv"><span>${esc(t('module'))}</span><b>${esc(data.module)}</b></div>
+      <div class="kv"><span>${esc(t('date'))}</span><b>${esc(data.date)} · ${esc(scopeTxt(data.scope, data.year))}</b></div>
+      <div class="kv"><span>${esc(t('takenBy'))}</span><b>${esc(data.takenBy || '—')}</b></div>
+      <div class="kv"><span>${esc(t('absentWere'))}</span><b>${data.takenAbsent}</b></div>
+      ${data.editable ? '' :
+        `<p class="muted" style="margin-top:12px">${esc(data.lockedReason)}</p>`}
+      <div class="row" style="margin-top:16px">
+        <button class="btn ghost" data-close><span class="lbl">${esc(t('notNow'))}</span></button>
+        <button class="btn gold" id="openAnyway"><span class="lbl">${esc(t(data.editable?'openAnyway':'view'))}</span></button>
+      </div>`);
+    $('#openAnyway').onclick = ev => run(ev.currentTarget,
+      () => openSession(moduleId, scope, hours, start, date, true), t('loading'));
+    return;
+  }
+
   S.session = data;
   S.roster  = data.roster;
   S.marks   = {};
@@ -1010,8 +1091,25 @@ async function flushPending(){
 }
 
 /* ------------------------------------------------- teacher records view */
+/* current filter values, shared by the on-screen report and the exports */
+function filterArgs(){
+  const p = $('#fPct'), f = $('#fFrom'), tt = $('#fTo');
+  const v = p ? p.value : '';
+  return {
+    from: f && f.value ? f.value : '',
+    to:   tt && tt.value ? tt.value : '',
+    minPct:  (v && v !== 'over10') ? v : '',
+    overPct: v === 'over10' ? 10 : ''
+  };
+}
+function filterActive(){
+  const a = filterArgs();
+  return !!(a.from || a.to || a.minPct || a.overPct);
+}
+
 async function loadRecords(){
-  const data = await api('teacherReport', { code:S.code, moduleId:S.recModule });
+  const data = await api('teacherReport',
+    Object.assign({ code:S.code, moduleId:S.recModule }, filterArgs()));
   S.records = data.rows; S.recGen = data.generated;
   if (S.recTab === 'sessions'){
     const h = await api('sessionHistory', { code:S.code, moduleId:S.recModule });
@@ -1019,6 +1117,12 @@ async function loadRecords(){
   }
   renderRecords();
 }
+
+$('#fApply').onclick = e => run(e.currentTarget, loadRecords, t('loading'));
+$('#fClear').onclick = e => {
+  $('#fPct').value = ''; $('#fFrom').value = ''; $('#fTo').value = '';
+  run(e.currentTarget, loadRecords, t('loading'));
+};
 
 function renderRecords(){
   const b = S.boot;
@@ -1031,8 +1135,11 @@ function renderRecords(){
       multiYear ? esc(yearTxt(x.year)) + ' · ' : ''
     }${esc(LANG==='ku'&&x.nameKu?x.nameKu:x.name)}</button>`).join('');
   $$('#v-records .tabs [data-rec]').forEach(el => el.classList.toggle('on', el.dataset.rec === S.recTab));
+  $('#recFilters').classList.toggle('hide', S.recTab === 'sessions');
 
-  if (S.recTab === 'sessions') return renderSessions();
+  if (S.recTab === 'sessions')  return renderSessions();
+  if (S.recTab === 'late')      return renderSideList('late');
+  if (S.recTab === 'excused')   return renderSideList('excused');
 
   const rows = (S.records || []);
   if (!rows.length){ $('#recBody').innerHTML = `<div class="empty"><b>${esc(t('noRecords'))}</b></div>`; return; }
@@ -1065,6 +1172,31 @@ function renderRecords(){
     <p class="muted" style="margin-top:10px">${esc(t('generated'))}: ${esc(S.recGen||'')}</p>`;
 }
 
+/* "Student 1 has 5 lates" — one line per student, most first */
+function renderSideList(kind){
+  const key = kind === 'late' ? 'lateCount' : 'excusedCount';
+  const hrs = kind === 'late' ? 'lateHours' : 'excusedHours';
+  const rows = (S.records || []).filter(r => (r[key] || 0) > 0)
+                                .sort((a, b) => (b[key]||0) - (a[key]||0) ||
+                                                a.name.localeCompare(b.name, 'en'));
+  if (!rows.length){
+    $('#recBody').innerHTML = `<div class="empty"><b>${esc(t(kind==='late'?'noLate':'noExcused'))}</b></div>`;
+    return;
+  }
+  $('#recBody').innerHTML = `
+    <div class="tscroll"><table><thead><tr>
+      <th>${esc(t('name'))}</th><th>${esc(t('group'))}</th>
+      <th style="text-align:end">${esc(t(kind==='late'?'lateList':'excusedList'))}</th>
+      <th style="text-align:end">${esc(t('hours'))}</th>
+    </tr></thead><tbody>${rows.map(r => `
+      <tr data-stu="${esc(r.studentId)}">
+        <td><b>${esc(r.name)}</b></td>
+        <td>${esc(r.group)}</td>
+        <td class="num"><span class="pill ${kind==='late'?'warn1':'info'}">${r[key]} ${esc(t('times'))}</span></td>
+        <td class="num">${r[hrs]} h</td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
 function renderSessions(){
   const rows = S.history || [];
   $('#recBody').innerHTML = rows.length ? `
@@ -1089,8 +1221,10 @@ $('#v-records').addEventListener('click', e => {
   const ex = e.target.closest('[data-export]');
   if (ex){
     const m = S.boot.modules.find(x => x.id === S.recModule);
-    return doExport(ex, { format: ex.dataset.export, moduleId: S.recModule,
-                          title: (m ? m.name : 'Attendance') });
+    return doExport(ex, Object.assign({
+      format: ex.dataset.export, moduleId: S.recModule,
+      moduleTitle: m ? (m.nameKu || m.name) : ''
+    }, filterArgs()));
   }
   const tb = e.target.closest('[data-rec]');
   if (tb){ S.recTab = tb.dataset.rec; return run(tb, loadRecords, t('loading')); }
@@ -1108,6 +1242,59 @@ function downloadB64(b64, filename, mime){
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+/* ------------------------------------------- reading a student list file */
+/* The spreadsheet parser is ~100 KB, so it is fetched only the first time
+   somebody actually picks an .xlsx file. CSV needs nothing at all. */
+function loadScript(src){
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) return res();
+    const s = document.createElement('script');
+    s.src = src; s.onload = () => res(); s.onerror = () => rej(new Error('Could not load the file reader.'));
+    document.head.appendChild(s);
+  });
+}
+
+function parseCsv(text){
+  return text.split(/\r?\n/).filter(l => l.trim()).map(line => {
+    const out = []; let cur = '', q = false;
+    for (let i = 0; i < line.length; i++){
+      const c = line[i];
+      if (q){
+        if (c === '"' && line[i+1] === '"'){ cur += '"'; i++; }
+        else if (c === '"') q = false;
+        else cur += c;
+      } else if (c === '"') q = true;
+      else if (c === ',' || c === ';' || c === '\t'){ out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  });
+}
+
+const HEADER_WORDS = ['name','student','email','year','group','phone','ناو','ئیمەیڵ','قۆناغ','گروپ','تەلەفۆن'];
+
+async function readSheetFile(file){
+  let rows;
+  if (/\.csv$/i.test(file.name)){
+    rows = parseCsv(await file.text());
+  } else {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type:'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    rows = XLSX.utils.sheet_to_json(ws, { header:1, blankrows:false, defval:'' })
+                     .map(r => r.map(c => String(c == null ? '' : c).trim()));
+  }
+  rows = rows.filter(r => r.some(c => c !== ''));
+  /* drop a header row if the file has one */
+  if (rows.length){
+    const first = rows[0].join(' ').toLowerCase();
+    if (HEADER_WORDS.some(w => first.indexOf(w) >= 0)) rows = rows.slice(1);
+  }
+  return rows.map(r => [r[0]||'', r[1]||'', r[2]||'', r[3]||'', r[4]||'']);
 }
 
 function doExport(btn, opts){
@@ -1137,6 +1324,17 @@ async function studentDetail(studentId){
 }
 
 /* ---------------------------------------------------------------- admin */
+function admFilterArgs(){
+  const p = $('#admPct'), f = $('#admFrom'), tt = $('#admTo');
+  const v = p ? p.value : '';
+  return {
+    from: f && f.value ? f.value : '',
+    to:   tt && tt.value ? tt.value : '',
+    minPct:  (v && v !== 'over10') ? v : '',
+    overPct: v === 'over10' ? 10 : ''
+  };
+}
+
 async function loadAdmin(){
   const d = await api('adminBootstrap', { code: S.code });
   S.adm = d; S.role = 'admin';
@@ -1158,6 +1356,18 @@ function renderAdmin(){
       <label class="f"><span class="lb">${esc(t('module'))}</span>
         <select id="admMod"><option value="">${esc(t('allModules'))}</option>
           ${d.modules.map(m=>`<option value="${esc(m.id)}">${esc(yearTxt(m.year))} · ${esc(m.name)}</option>`).join('')}</select></label>
+      <div class="frow" style="display:flex;gap:9px;flex-wrap:wrap">
+        <label class="f" style="flex:1;min-width:120px"><span class="lb">${esc(t('threshold'))}</span>
+          <select id="admPct">
+            <option value="">${esc(t('noFilter'))}</option>
+            <option value="5">≥ 5%</option><option value="7.5">≥ 7.5%</option>
+            <option value="10">≥ 10%</option><option value="over10">${esc(t('over10'))}</option>
+          </select></label>
+        <label class="f" style="flex:1;min-width:110px"><span class="lb">${esc(t('dateFrom'))}</span>
+          <input type="date" id="admFrom"></label>
+        <label class="f" style="flex:1;min-width:110px"><span class="lb">${esc(t('dateTo'))}</span>
+          <input type="date" id="admTo"></label>
+      </div>
       <button class="btn" id="admRun"><span class="lbl">${esc(t('refresh'))}</span></button>
       <div class="row" style="margin-top:9px;gap:7px">
         <button class="btn sm sec" data-aexport="xlsx" style="flex:1">
@@ -1167,8 +1377,9 @@ function renderAdmin(){
       </div>
       <div id="admReportOut" style="margin-top:14px"></div></div>`;
     $('#admRun').onclick = e => run(e.currentTarget, async () => {
-      const r = await api('adminReport', { code:S.code, moduleId: $('#admMod').value,
-                                           year: $('#admYear').value });
+      const r = await api('adminReport', Object.assign({
+        code:S.code, moduleId: $('#admMod').value, year: $('#admYear').value
+      }, admFilterArgs()));
       $('#admReportOut').innerHTML = r.rows.length ? `<div class="tscroll"><table><thead><tr>
         <th>${esc(t('name'))}</th><th>${esc(t('module'))}</th>
         <th style="text-align:end">${esc(t('absentH'))}</th><th style="text-align:end">%</th>
@@ -1242,6 +1453,13 @@ function renderAdmin(){
       <label class="f"><span class="lb">${esc(t('year'))}</span>
         <select id="impYear">${['Year1','Year2','Year3','Year4'].map(y=>
           `<option value="${y}">${esc(yearTxt(y))}</option>`).join('')}</select></label>
+      <div style="border:1.5px dashed var(--line);border-radius:13px;padding:14px;margin-bottom:14px">
+        <b style="font-size:14px">${esc(t('importFile'))}</b>
+        <p class="muted" style="margin:5px 0 11px">${esc(t('importCols'))}</p>
+        <input type="file" id="impFile" accept=".xlsx,.xls,.csv"
+               style="min-height:auto;padding:9px;border-style:dashed">
+        <div id="impFileOut" class="muted" style="margin-top:8px"></div>
+      </div>
       <p class="muted" style="margin-bottom:9px">${esc(t('importHint'))}</p>
       <textarea id="impTxt" placeholder="Ahmed Karim, ahmed@uor.edu.krd, A&#10;Sara Jamal, sara@uor.edu.krd, B"></textarea>
       <button class="btn" id="impBtn" style="margin-top:10px"><span class="lbl">${esc(t('importBtn'))}</span></button>
@@ -1258,6 +1476,21 @@ function renderAdmin(){
       $('#impTxt').value = '';
       await loadAdmin();
     }, t('saving'));
+
+    $('#impFile').onchange = ev => {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      run(null, async () => {
+        const rows = await readSheetFile(file);
+        $('#impFileOut').textContent = rows.length + ' ' + t('foundRows');
+        if (!rows.length) return;
+        const r = await api('importStudents',
+          { code:S.code, year: $('#impYear').value, rows: rows }, 120000);
+        toast(r.added + ' ' + t('imported'), 'good');
+        ev.target.value = '';
+        await loadAdmin();
+      }, t('reading'));
+    };
   }
 
   if (S.admTab === 'settings'){
@@ -1282,9 +1515,12 @@ $('#admBody').addEventListener('click', e => {
   const ex = e.target.closest('[data-aexport]');
   if (ex){
     const y = $('#admYear'), m = $('#admMod');
-    return doExport(ex, { format: ex.dataset.aexport, scopeAll: true,
-                          year: y ? y.value : '', moduleId: m ? m.value : '',
-                          title: 'Attendance report' });
+    const mod = m && m.value ? (S.adm.modules.find(x => x.id === m.value) || {}) : null;
+    return doExport(ex, Object.assign({
+      format: ex.dataset.aexport, scopeAll: true,
+      year: y ? y.value : '', moduleId: m ? m.value : '',
+      moduleTitle: mod ? (mod.nameKu || mod.name) : ''
+    }, admFilterArgs()));
   }
   const b = e.target.closest('[data-inv]'); if (!b) return;
   run(b, async () => {
@@ -1305,6 +1541,36 @@ $('#sheet').addEventListener('click', e => {
                              g.dataset.st, d ? d.value : null), t('loading'));
   }
 });
+
+/* ------------------------------------------------- install as an app */
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); installPrompt = e;
+  $('#installBtn').classList.remove('hide');
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null; $('#installBtn').classList.add('hide');
+});
+
+$('#installBtn').onclick = async () => {
+  if (installPrompt){
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    $('#installBtn').classList.add('hide');
+    return;
+  }
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  openSheet(`<h3>${esc(t('installApp'))}</h3>
+    <p class="sub">${esc(ios ? t('installIOS') : t('installWait'))}</p>
+    <button class="btn" data-close><span class="lbl">${esc(t('done'))}</span></button>`);
+};
+
+/* already installed? then the button is noise */
+if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone){
+  $('#installBtn').classList.add('hide');
+}
 
 /* ------------------------------------------------------------- startup */
 function netState(){ $('#net').classList.toggle('show', !navigator.onLine); }

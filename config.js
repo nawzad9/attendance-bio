@@ -12,6 +12,6 @@
    --------------------------------------------------------------------- */
 
 window.UOR_CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbzdex_ZHHoCVnYsbV9EpHygZb9S13LcpHb5nXo0sKO6Yw-6LbgUrsGRemeTMfoQZeSp/exec',
-  APP_KEY: 'uor-bio-2026-0000-nawzad'
+  API_URL: 'https://script.google.com/macros/s/AKfycbwPTtoDArHixWu6_Zx-AdR3XVKC6EPwelBvB9RLgcjLyrx9RINJDtRT4o8A6onDdmHW/exec',
+  APP_KEY: 'uor-bio-2026-Nawzad-Rasul'
 };
