@@ -187,6 +187,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 
 .hr[data-m="L"]{background:var(--gold);color:#5c4204}
 .stu.flagged{background:linear-gradient(90deg,var(--bad-bg),var(--card) 55%)}
 body.rtl .stu.flagged{background:linear-gradient(-90deg,var(--bad-bg),var(--card) 55%)}
+.stu.locked{background:linear-gradient(90deg,var(--info-bg),var(--card) 55%)}
+body.rtl .stu.locked{background:linear-gradient(-90deg,var(--info-bg),var(--card) 55%)}
+.stu.locked .hr{opacity:.75;cursor:not-allowed}
+.stu.locked .hr:active{transform:none}
 
 .footbar{position:fixed;left:0;right:0;bottom:0;z-index:45;
   background:color-mix(in srgb,var(--card) 92%,transparent);
@@ -483,6 +487,7 @@ const T = {
   left:'Left', status:'Status', date:'Date', module:'Module', hours:'Hours', ok:'OK',
   warn1:'Notice', warn2:'Warning', final:'Final warning', deprived:'Deprived',
   noRecords:'No absences recorded yet.', markAll:'All', searchStu:'Search a student…', perWeek:'week',
+  permitted:'Permitted', permitLocked:'This student has an approved permit and cannot be marked absent.',
   refreshData:'Reload data from the sheet',
   refreshDataHint:'Use this after editing the sheet by hand if the app still shows the old list.',
   lateList:'Late', excusedList:'Excused', filters:'Filters', threshold:'Absence at least',
@@ -540,6 +545,7 @@ const T = {
   left:'ماوە', status:'دۆخ', date:'بەروار', module:'وانە', hours:'کاتژمێر', ok:'باش',
   warn1:'ئاگاداری', warn2:'ئاگاداری ٢', final:'ئاگاداری کۆتایی', deprived:'محروم',
   noRecords:'هێشتا هیچ نائامادەبوونێک تۆمار نەکراوە.', markAll:'هەموو', searchStu:'گەڕان بۆ خوێندکار…', perWeek:'هەفتە',
+  permitted:'مۆڵەتدار', permitLocked:'ئەم خوێندکارە مۆڵەتی پەسەندکراوی هەیە و ناتوانرێت نائامادە بکرێت.',
   refreshData:'نوێکردنەوەی زانیاری لە شیتەکە',
   refreshDataHint:'دوای دەستکاری شیتەکە بە دەست، ئەمە بەکاربهێنە ئەگەر ئەپ هێشتا لیستی کۆن پیشان دەدات.',
   lateList:'درەنگ', excusedList:'مۆڵەت', filters:'پاڵاوتن', threshold:'نائامادەبوون لانیکەم',
@@ -908,9 +914,15 @@ async function openSession(moduleId, scope, hours, start, date, force){
   S.roster  = data.roster;
   S.marks   = {};
   const blank = 'P'.repeat(data.hours);
-  data.roster.forEach(s => {
+  /* Every student must have a distinct key. If the sheet ever hands back a
+     blank or repeated id, fall back to the position so marks can never be
+     written over one another. */
+  const usedIds = {};
+  data.roster.forEach((s, i) => {
+    if (!s.id || usedIds[s.id]) s.id = 'POS' + i;
+    usedIds[s.id] = true;
     let m = (data.draft && data.draft[s.id]) ? String(data.draft[s.id]) : blank;
-    if (!data.draft && s.permit) m = 'E'.repeat(data.hours);
+    if (s.permit) m = 'E'.repeat(data.hours);      // an approved permit wins
     S.marks[s.id] = (m + blank).slice(0, data.hours);
   });
   /* an unsent local draft always wins over the server copy */
@@ -945,10 +957,12 @@ function renderRoster(filter){
   for (const s of list){
     const m = S.marks[s.id] || 'P'.repeat(h);
     const flagged = m.includes('A');
-    html += `<div class="stu ${flagged?'flagged':''}" data-sid="${esc(s.id)}">
-      <div class="n"><b>${esc(s.name)}</b><span>${esc(s.group)}${s.permit?' · '+esc(s.permit):''}</span></div>
+    const lock = !!s.permit;
+    html += `<div class="stu ${flagged?'flagged':''} ${lock?'locked':''}" data-sid="${esc(s.id)}">
+      <div class="n"><b>${esc(s.name)}</b><span>${esc(s.group)}${
+        lock ? ' · <span class="pill info">⊘ '+esc(t('permitted'))+'</span> '+esc(s.permit) : ''}</span></div>
       <div class="cells">${Array.from({length:h},(_,i)=>
-        `<button class="hr" data-m="${m[i]||'P'}" data-i="${i}">${m[i]||'P'}</button>`).join('')}</div>
+        `<button class="hr" data-m="${m[i]||'P'}" data-i="${i}"${lock?' disabled':''}>${m[i]||'P'}</button>`).join('')}</div>
     </div>`;
   }
   $('#rosterBody').innerHTML = html || `<div class="empty"><b>—</b></div>`;
@@ -965,6 +979,8 @@ function updateCounts(){
 
 const CYCLE = { P:'A', A:'E', E:'L', L:'P' };
 $('#rosterBody').addEventListener('click', e => {
+  const row0 = e.target.closest('.stu');
+  if (row0 && row0.classList.contains('locked')) { toast(t('permitLocked'), 'err'); return; }
   const cell = e.target.closest('.hr'); if (!cell) return;
   if (S.session && !S.session.editable) { toast(S.session.lockedReason, 'err'); return; }
   const row = cell.closest('.stu'); const sid = row.dataset.sid;
@@ -983,7 +999,7 @@ $('#hourHead').addEventListener('click', e => {
   const b = e.target.closest('[data-col]'); if (!b) return;
   if (S.session && !S.session.editable) return;
   const i = Number(b.dataset.col);
-  const shown = $$('#rosterBody .stu').map(el => el.dataset.sid);
+  const shown = $$('#rosterBody .stu:not(.locked)').map(el => el.dataset.sid);
   const anyPresent = shown.some(sid => (S.marks[sid] || '')[i] !== 'A');
   shown.forEach(sid => {
     const cur = S.marks[sid] || 'P'.repeat(S.session.hours);
@@ -996,7 +1012,9 @@ $('#hourHead').addEventListener('click', e => {
 $('#allPresentBtn').onclick = () => {
   if (S.session && !S.session.editable) return;
   const blank = 'P'.repeat(S.session.hours);
-  Object.keys(S.marks).forEach(sid => { S.marks[sid] = blank; });
+  const locked = {};
+  S.roster.forEach(s => { if (s.permit) locked[s.id] = true; });
+  Object.keys(S.marks).forEach(sid => { if (!locked[sid]) S.marks[sid] = blank; });
   renderRoster($('#search').value); markDirty();
   toast(t('allPresent'), 'good');
 };
@@ -1145,7 +1163,10 @@ function renderRecords(){
   if (S.recTab === 'late')      return renderSideList('late');
   if (S.recTab === 'excused')   return renderSideList('excused');
 
-  const rows = (S.records || []);
+  /* the register order: group A, then B, names A → Z inside each */
+  const rows = (S.records || []).slice().sort((a, b) =>
+    String(a.group || '').localeCompare(String(b.group || '')) ||
+    String(a.name  || '').localeCompare(String(b.name  || '')));
   if (!rows.length){ $('#recBody').innerHTML = `<div class="empty"><b>${esc(t('noRecords'))}</b></div>`; return; }
 
   const planned = rows[0] ? rows[0].planned : 0;
