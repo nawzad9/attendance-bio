@@ -12,6 +12,6 @@
    --------------------------------------------------------------------- */
 
 window.UOR_CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbzola8osXuxpWICTpPDwVyANore0VQ8kQhP0DzGJX-fR_-jq-SuYgN5DPpRRdLaPqUAyA/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbztZ7W_N-SOwx216PW0TAiuR5AAZBIOAqhBQEZJL8hZN11CFJn9UwOSYijcZoD_pht5PA/exec',
   APP_KEY: 'uor-bio-2026-Nawzad-Mohammed'
 };
